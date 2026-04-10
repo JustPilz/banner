@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Конфигуратор анимации баннера</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      min-height: 100vh;
+      color: #111827;
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 48px 32px;
+    }
+
+    /* ── Banner ─────────────────────────────────────────────────────── */
+    .banner-widget {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 285px;
+    }
+
+    .banner-content {
+      position: relative;
+      height: 72px;
+      border-radius: 12px;
+      background: #424242;
+    }
+
+    /* Image slot */
+    .banner-image-slot {
+      position: absolute;
+      height: 72px;
+      left: 183px;
+      top: 0;
+      width: 102px;
+      pointer-events: none;
+    }
+
+    .banner-image-mask {
+      position: absolute;
+      height: 104px;
+      left: 0;
+      top: -24px;
+      width: 134px;
+      mask-repeat: no-repeat;
+      mask-position: 0px 24px;
+      mask-size: 102px 80px;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: 0px 24px;
+      -webkit-mask-size: 102px 80px;
+    }
+
+    .banner-image-overflow {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    #banner-img {
+      position: absolute;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Text slot */
+    .banner-text-slot {
+      position: absolute;
+      left: 12px;
+      top: 16px;
+      width: 171px;
+      overflow: hidden;
+    }
+
+    #banner-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .banner-text-p {
+      font-family: 'SB Sans Interface', -apple-system, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      line-height: 20px;
+      color: #e6e8ef;
+      width: 100%;
+    }
+
+    /* Dots */
+    .banner-dots {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      height: 4px;
+    }
+
+    .banner-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      transition: background-color 300ms;
+    }
+
+    /* ── Card ───────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1), 0 4px 12px rgba(0,0,0,.06);
+      padding: 24px;
+      width: 100%;
+    }
+
+    /* ── Configurator ───────────────────────────────────────────────── */
+    .cfg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 12px;
+    }
+
+    .cfg-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1f2937;
+      white-space: nowrap;
+    }
+
+    .cfg-save-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cfg-io-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .cfg-io-hint {
+      font-size: 12px;
+      color: #6b7280;
+      margin-left: auto;
+    }
+
+    .cfg-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 24px;
+    }
+
+    .cfg-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .cfg-col-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #1f2937;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      margin-bottom: 16px;
+    }
+
+    .cfg-section {
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+      margin-top: 16px;
+    }
+
+    .cfg-section-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .cfg-field { margin-bottom: 14px; }
+    .cfg-field:last-child { margin-bottom: 0; }
+
+    .cfg-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+
+    .cfg-hint {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .cfg-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Summary */
+    .cfg-summary { margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb; }
+    .cfg-summary-title { font-size: 15px; font-weight: 500; color: #374151; margin-bottom: 10px; }
+    .cfg-sum-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #4b5563;
+      margin-bottom: 6px;
+    }
+    .cfg-sum-row.divider { padding-top: 8px; border-top: 1px solid #e5e7eb; margin-top: 2px; }
+    .cfg-sum-val { font-weight: 600; }
+
+    /* ── Saved ──────────────────────────────────────────────────────── */
+    .saved-header { font-size: 17px; font-weight: 600; color: #1f2937; margin-bottom: 16px; }
+    .saved-empty  { font-size: 14px; color: #6b7280; }
+
+    .saved-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .saved-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px;
+      transition: box-shadow 200ms;
+    }
+    .saved-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+
+    .saved-card-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .saved-card-name { font-weight: 600; color: #111827; font-size: 14px; }
+
+    .saved-card-info { margin-bottom: 10px; }
+    .saved-info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #4b5563;
+      margin-bottom: 3px;
+    }
+
+    /* ── Form controls ──────────────────────────────────────────────── */
+    input[type="text"],
+    input[type="number"],
+    select {
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 150ms, box-shadow 150ms;
+      background: #fff;
+      color: inherit;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.2);
+    }
+
+    input[type="text"]   { min-width: 200px; }
+    input[type="number"] { width: 72px; padding: 5px 8px; font-size: 13px; }
+    select { width: 100%; cursor: pointer; }
+
+    input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 9999px;
+      appearance: none;
+      -webkit-appearance: none;
+      background: #e5e7eb;
+      cursor: pointer;
+      outline: none;
+      border: none;
+      padding: 0;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      transition: background 150ms, transform 150ms;
+    }
+    input[type="range"]:hover::-webkit-slider-thumb { background: #2563eb; transform: scale(1.15); }
+
+    /* ── Buttons ────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 150ms, opacity 150ms;
+      white-space: nowrap;
+    }
+    .btn:disabled { opacity: .45; cursor: default; }
+
+    .btn-blue   { background: #2563eb; color: #fff; }
+    .btn-blue:not(:disabled):hover { background: #1d4ed8; }
+
+    .btn-green  { background: #16a34a; color: #fff; }
+    .btn-green:hover { background: #15803d; }
+
+    .btn-purple { background: #7c3aed; color: #fff; }
+    .btn-purple:hover { background: #6d28d9; }
+
+    .btn-orange { background: #ea580c; color: #fff; }
+    .btn-orange:hover { background: #c2410c; }
+
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+    .btn-ghost-red {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: color 150ms, background 150ms;
+    }
+    .btn-ghost-red:hover { color: #b91c1c; background: #fee2e2; }
+
+    label.btn { cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Banner preview ─────────────────────────────────────────────── -->
+  <div class="banner-widget">
+    <div class="banner-content" id="banner-content">
+      <div class="banner-image-slot">
+        <div class="banner-image-mask" id="banner-image-mask">
+          <div class="banner-image-overflow">
+            <img id="banner-img" src="" alt="" />
+          </div>
+        </div>
+      </div>
+      <div class="banner-text-slot">
+        <div id="banner-text">
+          <p class="banner-text-p" id="banner-text-p"></p>
+        </div>
+      </div>
+    </div>
+    <div class="banner-dots" id="banner-dots"></div>
+  </div>
+
+  <!-- ── Configurator ───────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="cfg-header">
+      <h2 class="cfg-title">Конфигуратор анимации</h2>
+      <div class="cfg-save-row">
+        <input type="text" id="cfg-name" placeholder="Название конфигурации" />
+        <button class="btn btn-blue" id="btn-save" disabled>Сохранить</button>
+      </div>
+    </div>
+
+    <div class="cfg-io-row">
+      <button class="btn btn-green"  id="btn-export">📥 Экспорт в JSON</button>
+      <button class="btn btn-purple" id="btn-copy">📋 Копировать JSON</button>
+      <label  class="btn btn-orange">
+        📤 <span id="import-label">Импорт из JSON</span>
+        <input type="file" id="file-import" accept=".json" style="display:none" />
+      </label>
+      <p class="cfg-io-hint">Экспортируйте конфигурацию, чтобы поделиться с другими</p>
+    </div>
+
+    <div class="cfg-grid">
+
+      <!-- Текст -->
+      <div class="cfg-col">
+        <div class="cfg-col-title">Текст</div>
+
+        <div class="cfg-section-title">Появление</div>
+        <div class="cfg-field">
+          <label class="cfg-label">Длительность (мс)</label>
+          <div class="cfg-row">
+            <input type="range"  id="textEntranceDuration-r" min="100" max="2000" step="50" />
+            <input type="number" id="textEntranceDuration-n" />
+          </div>
+        </div>
+        <div class="cfg-field">
+          <label class="cfg-label">Кривая</label>
+          <select id="textEntranceEase-s"></select>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title">Исчезновение</div>
+          <div class="cfg-field">
+            <label class="cfg-label">Длительность (мс)</label>
+            <div class="cfg-row">
+              <input type="range"  id="textExitDuration-r" min="100" max="2000" step="50" />
+              <input type="number" id="textExitDuration-n" />
+            </div>
+          </div>
+          <div class="cfg-field">
+            <label class="cfg-label">Кривая</label>
+            <select id="textExitEase-s"></select>
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title">Расстояние движения</div>
+          <div class="cfg-field">
+            <label class="cfg-label">Дистанция (px)</label>
+            <div class="cfg-row">
+              <input type="range"  id="textMovementDistance-r" min="0" max="200" step="5" />
+              <input type="number" id="textMovementDistance-n" />
+            </div>
+            <p class="cfg-hint">Расстояние появления и исчезновения текста</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Картинка -->
+      <div class="cfg-col">
+        <div class="cfg-col-title">Картинка</div>
+
+        <div class="cfg-section-title">Появление</div>
+        <div class="cfg-field">
+          <label class="cfg-label">Длительность (мс)</label>
+          <div class="cfg-row">
+            <input type="range"  id="imageEntranceDuration-r" min="100" max="2000" step="50" />
+            <input type="number" id="imageEntranceDuration-n" />
+          </div>
+        </div>
+        <div class="cfg-field">
+          <label class="cfg-label">Кривая</label>
+          <select id="imageEntranceEase-s"></select>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title">Исчезновение</div>
+          <div class="cfg-field">
+            <label class="cfg-label">Длительность (мс)</label>
+            <div class="cfg-row">
+              <input type="range"  id="imageExitDuration-r" min="100" max="2000" step="50" />
+              <input type="number" id="imageExitDuration-n" />
+            </div>
+          </div>
+          <div class="cfg-field">
+            <label class="cfg-label">Кривая</label>
+            <select id="imageExitEase-s"></select>
+          </div>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-section-title">Расстояние движения</div>
+          <div class="cfg-field">
+            <label class="cfg-label">Дистанция (px)</label>
+            <div class="cfg-row">
+              <input type="range"  id="imageMovementDistance-r" min="0" max="200" step="5" />
+              <input type="number" id="imageMovementDistance-n" />
+            </div>
+            <p class="cfg-hint">Расстояние появления и исчезновения картинки</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Тайминг -->
+      <div class="cfg-col">
+        <div class="cfg-col-title">Тайминг</div>
+
+        <div class="cfg-field">
+          <label class="cfg-label">Задержка картинки (мс)</label>
+          <div class="cfg-row">
+            <input type="range"  id="imageDelay-r" min="0" max="1000" step="50" />
+            <input type="number" id="imageDelay-n" />
+          </div>
+          <p class="cfg-hint">Отсчитывается от начала появления текста</p>
+        </div>
+
+        <div class="cfg-section">
+          <div class="cfg-field">
+            <label class="cfg-label">Время показа слайда (мс)</label>
+            <div class="cfg-row">
+              <input type="range"  id="cycleDelay-r" min="1000" max="10000" step="500" />
+              <input type="number" id="cycleDelay-n" />
+            </div>
+            <p class="cfg-hint">Интервал между циклами анимации</p>
+          </div>
+        </div>
+
+        <div class="cfg-summary">
+          <div class="cfg-summary-title">Сводка</div>
+          <div id="summary"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Saved configs ──────────────────────────────────────────────── -->
+  <div class="card">
+    <div class="saved-header" id="saved-title">Сохраненные конфигурации</div>
+    <div id="saved-body"><p class="saved-empty">Пока нет сохраненных конфигураций</p></div>
+  </div>
+
+</div>
+<script>
+'use strict';
+
+// ─── Data ──────────────────────────────────────────────────────────────────────
+
+const IMAGES = {
+  '030f2c4523c631db4da1a11e8a2f8fd7d2f25b52': 'images/030f2c4523c631db4da1a11e8a2f8fd7d2f25b52.webp',
+  '13a87ebe8d52252380a917437a7ba97c4d34355e': 'images/13a87ebe8d52252380a917437a7ba97c4d34355e.avif',
+  '16a9fde8a5bc0a83aedd938e24d56d8e72f2ae4b': 'images/16a9fde8a5bc0a83aedd938e24d56d8e72f2ae4b.webp',
+  '9927ef591e6aeb63891cf432076b3467dfbd4777': 'images/9927ef591e6aeb63891cf432076b3467dfbd4777.webp',
+  'd03a307bb2b6acb25a22f23a9520f7d71f4670fb': 'images/d03a307bb2b6acb25a22f23a9520f7d71f4670fb.webp',
+};
+
+const SLIDES = [
+  { text: '20 000 бонусов\nдля юрлиц и ИП',
+    image: IMAGES['030f2c4523c631db4da1a11e8a2f8fd7d2f25b52'],
+    style: 'height:98.36%;left:0.98%;top:1.34%;width:98.04%' },
+  { text: 'Переагрузка\nреферальной программы',
+    image: IMAGES['d03a307bb2b6acb25a22f23a9520f7d71f4670fb'],
+    style: 'height:115.39%;left:-6.87%;top:-7.05%;width:115.71%' },
+  { text: 'Новые возможности\nдля бизнеса',
+    image: IMAGES['16a9fde8a5bc0a83aedd938e24d56d8e72f2ae4b'],
+    style: 'height:114.94%;left:-3.82%;top:-4.17%;width:108.35%' },
+  { text: 'Специаьные условия\nдля партнеров',
+    image: IMAGES['9927ef591e6aeb63891cf432076b3467dfbd4777'],
+    style: 'height:98.92%;left:1.39%;top:-0.09%;width:97.22%' },
+  { text: 'Бонусы до конца\nмарта 2026',
+    image: IMAGES['13a87ebe8d52252380a917437a7ba97c4d34355e'],
+    style: 'height:133.12%;left:-2.29%;top:-17.7%;width:103.66%' },
+];
+
+// Framer Motion ease → CSS cubic-bezier
+const EASES = {
+  linear:    'linear',
+  easeIn:    'cubic-bezier(0.4,0,1,1)',
+  easeOut:   'cubic-bezier(0,0,0.2,1)',
+  easeInOut: 'cubic-bezier(0.4,0,0.2,1)',
+  circIn:    'cubic-bezier(0.55,0,1,0.45)',
+  circOut:   'cubic-bezier(0,0.55,0.45,1)',
+  circInOut: 'cubic-bezier(0.85,0,0.15,1)',
+  backIn:    'cubic-bezier(0.36,0,0.66,-0.56)',
+  backOut:   'cubic-bezier(0.34,1.56,0.64,1)',
+  backInOut: 'cubic-bezier(0.68,-0.6,0.32,1.6)',
+};
+
+const EASE_OPTIONS = [
+  { value: 'linear',    label: 'Linear' },
+  { value: 'easeIn',    label: 'Ease In' },
+  { value: 'easeOut',   label: 'Ease Out' },
+  { value: 'easeInOut', label: 'Ease In Out' },
+  { value: 'circIn',    label: 'Circ In' },
+  { value: 'circOut',   label: 'Circ Out' },
+  { value: 'circInOut', label: 'Circ In Out' },
+  { value: 'backIn',    label: 'Back In' },
+  { value: 'backOut',   label: 'Back Out' },
+  { value: 'backInOut', label: 'Back In Out' },
+];
+
+// SVG mask — rounded top-right corner shape (102×80, r=12)
+const MASK_SVG = "data:image/svg+xml,%3Csvg%20preserveAspectRatio%3D%22none%22%20width%3D%22100%25%22%20height%3D%22100%25%22%20viewBox%3D%220%200%20102%2080%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M0%200H90C96.6274%200%20102%205.37258%20102%2012V80H0V0Z%22%20fill%3D%22%23000%22%2F%3E%3C%2Fsvg%3E";
+
+// ─── State ─────────────────────────────────────────────────────────────────────
+
+let config = {
+  textEntranceDuration:  500,
+  textEntranceEase:      'easeInOut',
+  textExitDuration:      500,
+  textExitEase:          'easeInOut',
+  imageEntranceDuration: 500,
+  imageEntranceEase:     'easeInOut',
+  imageExitDuration:     500,
+  imageExitEase:         'easeInOut',
+  imageDelay:            200,
+  cycleDelay:            4000,
+  textMovementDistance:  50,
+  imageMovementDistance: 50,
+};
+
+let savedConfigs   = [];
+let currentIndex   = 0;
+let transitionLock = false;
+let bannerInterval = null;
+
+// ─── DOM refs ──────────────────────────────────────────────────────────────────
+
+const elImg      = document.getElementById('banner-img');
+const elImgMask  = document.getElementById('banner-image-mask');
+const elText     = document.getElementById('banner-text');
+const elTextP    = document.getElementById('banner-text-p');
+const elDots     = document.getElementById('banner-dots');
+
+// ─── Banner animation ──────────────────────────────────────────────────────────
+
+// Apply SVG mask
+elImgMask.style.maskImage         = `url('${MASK_SVG}')`;
+elImgMask.style.webkitMaskImage   = `url('${MASK_SVG}')`;
+
+/**
+ * Run a Web Animations API transition on an element.
+ * Duration is multiplied by 0.6 to match Framer Motion's opacity/x shorthand.
+ */
+function wanim(el, from, to, durationMs, ease) {
+  el.getAnimations().forEach(a => a.cancel());
+  return el.animate([from, to], {
+    duration: Math.max(10, Math.round(durationMs * 0.6)),
+    easing:   EASES[ease] || 'ease',
+    fill:     'both',
+  });
+}
+
+function slideIn(el, dx, dur, ease) {
+  return wanim(el,
+    { opacity: 0, transform: `translateX(${dx}px)` },
+    { opacity: 1, transform: 'translateX(0)' },
+    dur, ease
+  );
+}
+
+function slideOut(el, dx, dur, ease) {
+  return wanim(el,
+    { opacity: 1, transform: 'translateX(0)' },
+    { opacity: 0, transform: `translateX(${dx}px)` },
+    dur, ease
+  );
+}
+
+// direction = "reverse" (used for the preview banner):
+// text  : enters from LEFT (dx = -distance), exits LEFT
+// image : enters from RIGHT (dx = +distance), exits RIGHT
+function textIn()  { return slideIn (elText, -config.textMovementDistance,  config.textEntranceDuration,  config.textEntranceEase); }
+function textOut() { return slideOut(elText, -config.textMovementDistance,  config.textExitDuration,      config.textExitEase);     }
+function imgIn()   { return slideIn (elImg,   config.imageMovementDistance, config.imageEntranceDuration, config.imageEntranceEase); }
+function imgOut()  { return slideOut(elImg,   config.imageMovementDistance, config.imageExitDuration,     config.imageExitEase);    }
+
+function renderSlide(idx) {
+  const s = SLIDES[idx];
+  elImg.src        = s.image;
+  elImg.style.cssText = 'position:absolute;object-fit:cover;display:block;' + s.style;
+  const lines = s.text.split('\n');
+  elTextP.innerHTML = lines.map((l, i) => i < lines.length - 1 ? l + '<br>' : l).join('');
+}
+
+function renderDots(active) {
+  elDots.innerHTML = '';
+  SLIDES.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'banner-dot';
+    d.style.backgroundColor = i === active ? '#389f74' : '#dde0ea';
+    elDots.appendChild(d);
+  });
+}
+
+function runCycle() {
+  if (transitionLock) return;
+  transitionLock = true;
+
+  // 1. Hide text now
+  textOut();
+
+  // 2. Hide image after imageDelay
+  setTimeout(() => {
+    imgOut();
+
+    // 3. Advance slide after 500ms gap
+    setTimeout(() => {
+      currentIndex = (currentIndex + 1) % SLIDES.length;
+      renderSlide(currentIndex);
+      renderDots(currentIndex);
+
+      // 4. Show text
+      textIn();
+
+      // 5. Show image after imageDelay
+      setTimeout(() => {
+        imgIn();
+        transitionLock = false;
+      }, config.imageDelay);
+
+    }, 500);
+  }, config.imageDelay);
+}
+
+function startBanner() {
+  renderSlide(currentIndex);
+  renderDots(currentIndex);
+  textIn();
+  imgIn();
+  bannerInterval = setInterval(runCycle, config.cycleDelay);
+}
+
+function stopBanner() {
+  clearInterval(bannerInterval);
+  bannerInterval = null;
+  transitionLock = false;
+}
+
+function restartBanner() {
+  stopBanner();
+  currentIndex = 0;
+  startBanner();
+}
+
+// ─── Configurator controls ─────────────────────────────────────────────────────
+
+function populateSelects() {
+  ['textEntranceEase-s', 'textExitEase-s', 'imageEntranceEase-s', 'imageExitEase-s']
+    .forEach(id => {
+      const sel = document.getElementById(id);
+      EASE_OPTIONS.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o.value;
+        opt.textContent = o.label;
+        sel.appendChild(opt);
+      });
+    });
+}
+
+function syncUI() {
+  [
+    ['textEntranceDuration',  'textEntranceDuration-r',  'textEntranceDuration-n'],
+    ['textExitDuration',      'textExitDuration-r',      'textExitDuration-n'],
+    ['imageEntranceDuration', 'imageEntranceDuration-r', 'imageEntranceDuration-n'],
+    ['imageExitDuration',     'imageExitDuration-r',     'imageExitDuration-n'],
+    ['textMovementDistance',  'textMovementDistance-r',  'textMovementDistance-n'],
+    ['imageMovementDistance', 'imageMovementDistance-r', 'imageMovementDistance-n'],
+    ['imageDelay',            'imageDelay-r',            'imageDelay-n'],
+    ['cycleDelay',            'cycleDelay-r',            'cycleDelay-n'],
+  ].forEach(([key, rid, nid]) => {
+    document.getElementById(rid).value = config[key];
+    document.getElementById(nid).value = config[key];
+  });
+
+  ['textEntranceEase', 'textExitEase', 'imageEntranceEase', 'imageExitEase'].forEach(key => {
+    document.getElementById(key + '-s').value = config[key];
+  });
+
+  renderSummary();
+}
+
+function renderSummary() {
+  const rows = [
+    ['Текст появление:',       config.textEntranceDuration  + ' мс'],
+    ['Текст исчезновение:',    config.textExitDuration      + ' мс'],
+    ['Текст движение:',        config.textMovementDistance  + ' px'],
+    ['Картинка появление:',    config.imageEntranceDuration + ' мс'],
+    ['Картинка исчезновение:', config.imageExitDuration     + ' мс'],
+    ['Картинка движение:',     config.imageMovementDistance + ' px'],
+    ['Задержка картинки:',     config.imageDelay            + ' мс', true],
+    ['Цикл:',                  config.cycleDelay            + ' мс'],
+  ];
+  document.getElementById('summary').innerHTML = rows.map(([label, val, div]) =>
+    `<div class="cfg-sum-row${div ? ' divider' : ''}"><span>${label}</span><span class="cfg-sum-val">${val}</span></div>`
+  ).join('');
+}
+
+function bindSlider(key, min, max) {
+  const r = document.getElementById(key + '-r');
+  const n = document.getElementById(key + '-n');
+
+  function apply(raw) {
+    let v = parseInt(raw, 10);
+    if (isNaN(v)) v = min;
+    v = Math.max(min, Math.min(max, v));
+    config[key] = v;
+    r.value = v;
+    n.value = v;
+    renderSummary();
+    restartBanner();
+  }
+
+  r.addEventListener('input',  () => apply(r.value));
+  n.addEventListener('change', () => apply(n.value));
+}
+
+function bindSelect(key) {
+  const s = document.getElementById(key + '-s');
+  s.addEventListener('change', () => {
+    config[key] = s.value;
+    restartBanner();
+  });
+}
+
+function bindAllControls() {
+  bindSlider('textEntranceDuration',  100, 2000);
+  bindSlider('textExitDuration',      100, 2000);
+  bindSlider('imageEntranceDuration', 100, 2000);
+  bindSlider('imageExitDuration',     100, 2000);
+  bindSlider('textMovementDistance',    0, 200);
+  bindSlider('imageMovementDistance',   0, 200);
+  bindSlider('imageDelay',              0, 1000);
+  bindSlider('cycleDelay',           1000, 10000);
+
+  bindSelect('textEntranceEase');
+  bindSelect('textExitEase');
+  bindSelect('imageEntranceEase');
+  bindSelect('imageExitEase');
+}
+
+// ─── Save / Export / Import ────────────────────────────────────────────────────
+
+const cfgNameInput  = document.getElementById('cfg-name');
+const btnSave       = document.getElementById('btn-save');
+
+cfgNameInput.addEventListener('input', () => {
+  btnSave.disabled = !cfgNameInput.value.trim();
+});
+
+btnSave.addEventListener('click', () => {
+  const name = cfgNameInput.value.trim();
+  if (!name) return;
+  savedConfigs.push({ id: String(Date.now()), name, config: Object.assign({}, config) });
+  cfgNameInput.value = '';
+  btnSave.disabled = true;
+  renderSaved();
+});
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), { href: url, download: `animation-config-${Date.now()}.json` });
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-copy').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-copy');
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+    btn.textContent = '✅ Скопировано!';
+    setTimeout(() => { btn.innerHTML = '📋 Копировать JSON'; }, 2000);
+  } catch (e) {
+    console.error('Failed to copy:', e);
+  }
+});
+
+document.getElementById('file-import').addEventListener('change', function () {
+  const file = this.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const parsed = JSON.parse(ev.target.result);
+      if (isValidConfig(parsed)) {
+        Object.assign(config, parsed);
+        syncUI();
+        restartBanner();
+        const lbl = document.getElementById('import-label');
+        lbl.textContent = 'Импортировано!';
+        setTimeout(() => { lbl.textContent = 'Импорт из JSON'; }, 2000);
+      } else {
+        alert('Неверный формат файла конфигурации');
+      }
+    } catch (err) {
+      alert('Ошибка при чтении файла');
+      console.error('Import error:', err);
+    }
+  };
+  reader.readAsText(file);
+  this.value = '';
+});
+
+function isValidConfig(c) {
+  const nums = ['textEntranceDuration','textExitDuration','imageEntranceDuration',
+                'imageExitDuration','imageDelay','cycleDelay','textMovementDistance','imageMovementDistance'];
+  const strs = ['textEntranceEase','textExitEase','imageEntranceEase','imageExitEase'];
+  return nums.every(k => typeof c[k] === 'number') && strs.every(k => typeof c[k] === 'string');
+}
+
+// ─── Saved configs ─────────────────────────────────────────────────────────────
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderSaved() {
+  const titleEl = document.getElementById('saved-title');
+  const bodyEl  = document.getElementById('saved-body');
+
+  if (!savedConfigs.length) {
+    titleEl.textContent = 'Сохраненные конфигурации';
+    bodyEl.innerHTML = '<p class="saved-empty">Пока нет сохраненных конфигураций</p>';
+    return;
+  }
+
+  titleEl.textContent = `Сохраненные конфигурации (${savedConfigs.length})`;
+
+  bodyEl.innerHTML = `<div class="saved-grid">${savedConfigs.map(sc => `
+    <div class="saved-card">
+      <div class="saved-card-head">
+        <span class="saved-card-name">${esc(sc.name)}</span>
+        <button class="btn-ghost-red" data-del="${sc.id}" title="Удалить">✕</button>
+      </div>
+      <div class="saved-card-info">
+        <div class="saved-info-row"><span>Текст вход/выход:</span><span>${sc.config.textEntranceDuration}/${sc.config.textExitDuration} мс</span></div>
+        <div class="saved-info-row"><span>Картинка вход/выход:</span><span>${sc.config.imageEntranceDuration}/${sc.config.imageExitDuration} мс</span></div>
+        <div class="saved-info-row"><span>Задержка:</span><span>${sc.config.imageDelay} мс</span></div>
+        <div class="saved-info-row"><span>Цикл:</span><span>${sc.config.cycleDelay} мс</span></div>
+      </div>
+      <button class="btn btn-blue btn-sm" style="width:100%" data-apply="${sc.id}">Применить</button>
+    </div>
+  `).join('')}</div>`;
+
+  bodyEl.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      savedConfigs = savedConfigs.filter(sc => sc.id !== btn.dataset.del);
+      renderSaved();
+    });
+  });
+
+  bodyEl.querySelectorAll('[data-apply]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sc = savedConfigs.find(s => s.id === btn.dataset.apply);
+      if (!sc) return;
+      Object.assign(config, sc.config);
+      syncUI();
+      restartBanner();
+    });
+  });
+}
+
+// ─── Bootstrap ─────────────────────────────────────────────────────────────────
+
+populateSelects();
+syncUI();
+bindAllControls();
+renderSaved();
+startBanner();
+</script>
+</body>
+</html>
