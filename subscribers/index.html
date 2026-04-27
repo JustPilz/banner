@@ -31,6 +31,35 @@
             padding: 2rem 1rem;
         }
 
+        .copy-test-btn {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            font-weight: 500;
+            padding: 0.35rem 0.55rem;
+            border-radius: 6px;
+            border: 1px solid #c8ced8;
+            background: #fff;
+            color: #334155;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+        }
+
+        .copy-test-btn:hover {
+            background: #f8fafc;
+            border-color: #b8c0d0;
+        }
+
+        .copy-test-btn svg {
+            flex-shrink: 0;
+            opacity: 0.85;
+        }
+
         .card {
             width: 100%;
             max-width: 360px;
@@ -134,11 +163,17 @@
             padding: 0.28rem 0.4rem;
             border-radius: 4px;
             margin-bottom: 0.15rem;
-            font-size: 0.8125rem;
+            font-size: 0.75rem;
             line-height: 1.35;
             word-break: break-all;
             border: 1px solid #e8eaef;
             background: #fafbfc;
+        }
+
+        .list li.no-name {
+            background: #fff4e6;
+            border-color: #f0d4b8;
+            scroll-margin-block: 8px;
         }
 
         .list li.invalid {
@@ -197,6 +232,10 @@
         .list li .remove:hover {
             background: rgba(15, 23, 42, 0.06);
             color: #b91c1c;
+        }
+
+        .list li.no-name .remove:hover {
+            background: rgba(234, 88, 12, 0.1);
         }
 
         .list li.invalid .remove:hover {
@@ -316,6 +355,30 @@
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
         }
 
+        function catalogUserForEmail(addr, catalog) {
+            const key = String(addr).trim().toLowerCase();
+            if (!key || !Array.isArray(catalog)) return null;
+            return (
+                catalog.find(
+                    (x) => x.email && String(x.email).trim().toLowerCase() === key
+                ) || null
+            );
+        }
+
+        function hasCatalogDisplayName(addr, catalog) {
+            const u = catalogUserForEmail(addr, catalog);
+            return !!(u?.name && String(u.name).trim());
+        }
+
+        /** Если email есть в каталоге с именем — «Имя Фамилия (email)», иначе как есть */
+        function formatListEmailLabel(addr, catalog) {
+            const raw = String(addr).trim();
+            const u = catalogUserForEmail(addr, catalog);
+            const nm = u?.name && String(u.name).trim();
+            if (nm) return `${nm} (${raw})`;
+            return raw;
+        }
+
         /** Разбивает строку по запятым и пробелам, убирает пустые куски */
         function splitEmails(raw) {
             return String(raw)
@@ -323,6 +386,10 @@
                 .map((x) => x.trim())
                 .filter(Boolean);
         }
+
+        /** 30 шт.: 70% из USERS_LOCAL_RAW, 20% валидные не из списка, 10% с ошибками */
+        const TEST_EMAILS_CLIPBOARD =
+            "anna.sokolova@mail.ru, qa.automation.office@gmail.com, sergey.lebedev@yandex.ru, marya.k88mail.ru, no.catalog.user@proton.me, olga.novikova@mail.ru, yulia.bogdanova@mail.ru, helper.bot@internal-tools.dev, blue.ocean.wavesbk.ru, viktor.orlov@yandex.ru, bulk.send@transactional.example, svetlana.fedorova@mail.ru, konstantin.makarov@gmail.com, irina.zaytseva@mail.ru, nikolay.solovyov%yandex.ru, ekaterina.kuznetsova@mail.ru, roman.kiselev@gmail.com";
 
         function App() {
             const [input, setInput] = useState("");
@@ -333,6 +400,8 @@
             const inputRef = useRef(null);
             const listRef = useRef(null);
             const prevEmailLenRef = useRef(0);
+            const copyFeedbackTimerRef = useRef(null);
+            const [copyFeedback, setCopyFeedback] = useState("");
 
             useEffect(() => {
                 if (emails.length > prevEmailLenRef.current) {
@@ -350,6 +419,14 @@
             const scrollToFirstInvalid = useCallback(() => {
                 const el = listRef.current?.querySelector("li.invalid");
                 el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }, []);
+
+            useEffect(() => {
+                return () => {
+                    if (copyFeedbackTimerRef.current) {
+                        window.clearTimeout(copyFeedbackTimerRef.current);
+                    }
+                };
             }, []);
 
             useEffect(() => {
@@ -475,105 +552,163 @@
                 inputRef.current?.focus();
             };
 
+            const copyTestEmails = useCallback(() => {
+                if (copyFeedbackTimerRef.current) {
+                    window.clearTimeout(copyFeedbackTimerRef.current);
+                    copyFeedbackTimerRef.current = null;
+                }
+                const done = (ok) => {
+                    setCopyFeedback(ok ? "ok" : "err");
+                    copyFeedbackTimerRef.current = window.setTimeout(() => {
+                        setCopyFeedback("");
+                        copyFeedbackTimerRef.current = null;
+                    }, ok ? 1600 : 2400);
+                };
+                if (navigator.clipboard?.writeText) {
+                    navigator.clipboard
+                        .writeText(TEST_EMAILS_CLIPBOARD)
+                        .then(() => done(true))
+                        .catch(() => done(false));
+                } else {
+                    done(false);
+                }
+            }, []);
+
             return (
-                <div className="card">
-                    <h1>Адреса email</h1>
-                    <div className="field-wrap">
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            inputMode="email"
-                            autoComplete="off"
-                            placeholder="Email или поиск по имени…"
-                            value={input}
-                            onChange={handleChange}
-                            onPaste={handlePaste}
-                            onKeyDown={handleKeyDown}
-                            onFocus={handleFocus}
-                            onBlur={handleBlur}
-                        />
-                        {searchOpen && suggestions.length > 0 && (
-                            <ul className="suggestions" role="listbox">
-                                {suggestions.map((u) => (
-                                    <li key={u.id} role="option">
-                                        <button
-                                            type="button"
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => pickUser(u.email)}
-                                        >
-                                            <span className="name">{u.name}</span>
-                                            <span className="email">{u.email}</span>
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                    <p className="hint">
-                        {usersLoading
-                            ? "Загрузка каталога… (имитация ответа сервера, 500–1000 мс)"
-                            : "Разделители: пробел и запятая. Вставка из буфера, Enter или потеря фокуса добавляет в список."}
-                    </p>
-                    {emails.length !== 0 ? (
-                        <>
-                            {invalidEmailCount > 0 && (
-                                <div className="invalid-banner" role="alert" aria-live="polite">
-                                    <span>
-                                        {(() => {
-                                            const n = invalidEmailCount;
-                                            const n10 = n % 10;
-                                            const n100 = n % 100;
-                                            let w = "адресов";
-                                            if (n10 === 1 && n100 !== 11) w = "адрес";
-                                            else if (
-                                                n10 >= 2 &&
-                                                n10 <= 4 &&
-                                                (n100 < 10 || n100 >= 20)
-                                            )
-                                                w = "адреса";
-                                            return `Некорректный формат у ${n} ${w}`;
-                                        })()}
-                                    </span>
-                                    <button type="button" onClick={scrollToFirstInvalid}>
-                                        Показать в списке
-                                    </button>
-                                </div>
-                            )}
-                            <ul className="list" ref={listRef}>
-                                {emails.map((addr, i) => (
-                                    <li
-                                        key={`${addr}-${i}`}
-                                        className={isValidEmail(addr) ? "" : "invalid"}
-                                    >
-                                        <span>{addr}</span>
-                                        <button
-                                            type="button"
-                                            className="remove"
-                                            onClick={() => removeAt(i)}
-                                            aria-label={`Удалить ${addr}`}
-                                            title="Удалить"
-                                        >
-                                            <svg
-                                                width="10"
-                                                height="10"
-                                                viewBox="0 0 10 10"
-                                                aria-hidden="true"
+                <>
+                    <button
+                        type="button"
+                        className="copy-test-btn"
+                        onClick={copyTestEmails}
+                        title="Скопировать тестовый список email в буфер обмена"
+                        aria-label="Скопировать тестовый список email в буфер обмена"
+                    >
+                        <svg
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                        >
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        {copyFeedback === "ok"
+                            ? "Скопировано"
+                            : copyFeedback === "err"
+                                ? "Не удалось"
+                                : "Тест в буфер"}
+                    </button>
+                    <div className="card">
+                        <h1>Адреса email</h1>
+                        <div className="field-wrap">
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                inputMode="email"
+                                autoComplete="off"
+                                placeholder="Email или поиск по имени…"
+                                value={input}
+                                onChange={handleChange}
+                                onPaste={handlePaste}
+                                onKeyDown={handleKeyDown}
+                                onFocus={handleFocus}
+                                onBlur={handleBlur}
+                            />
+                            {searchOpen && suggestions.length > 0 && (
+                                <ul className="suggestions" role="listbox">
+                                    {suggestions.map((u) => (
+                                        <li key={u.id} role="option">
+                                            <button
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={() => pickUser(u.email)}
                                             >
-                                                <path
-                                                    d="M2 2 L8 8 M8 2 L2 8"
-                                                    stroke="currentColor"
-                                                    strokeWidth="1.3"
-                                                    strokeLinecap="round"
-                                                    fill="none"
-                                                />
-                                            </svg>
+                                                <span className="name">{u.name}</span>
+                                                <span className="email">{u.email}</span>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                        <p className="hint">
+                            {usersLoading
+                                ? "Загрузка каталога… (имитация ответа сервера, 500–1000 мс)"
+                                : "Разделители: пробел и запятая. Вставка из буфера, Enter или потеря фокуса добавляет в список."}
+                        </p>
+                        {emails.length !== 0 ? (
+                            <>
+                                {invalidEmailCount > 0 && (
+                                    <div className="invalid-banner" role="alert" aria-live="polite">
+                                        <span>
+                                            {(() => {
+                                                const n = invalidEmailCount;
+                                                const n10 = n % 10;
+                                                const n100 = n % 100;
+                                                let w = "адресов";
+                                                if (n10 === 1 && n100 !== 11) w = "адрес";
+                                                else if (
+                                                    n10 >= 2 &&
+                                                    n10 <= 4 &&
+                                                    (n100 < 10 || n100 >= 20)
+                                                )
+                                                    w = "адреса";
+                                                return `Некорректный формат у ${n} ${w}`;
+                                            })()}
+                                        </span>
+                                        <button type="button" onClick={scrollToFirstInvalid}>
+                                            Показать в списке
                                         </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </>
-                    ) : undefined}
-                </div>
+                                    </div>
+                                )}
+                                <ul className="list" ref={listRef}>
+                                    {emails.map((addr, i) => {
+                                        const rowLabel = formatListEmailLabel(addr, users);
+                                        const named = hasCatalogDisplayName(addr, users);
+                                        const rowClass = [
+                                            !isValidEmail(addr) && "invalid",
+                                            users.length > 0 && !named && "no-name",
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ");
+                                        return (
+                                            <li key={`${addr}-${i}`} className={rowClass}>
+                                                <span>{rowLabel}</span>
+                                                <button
+                                                    type="button"
+                                                    className="remove"
+                                                    onClick={() => removeAt(i)}
+                                                    aria-label={`Удалить ${rowLabel}`}
+                                                    title="Удалить"
+                                                >
+                                                    <svg
+                                                        width="10"
+                                                        height="10"
+                                                        viewBox="0 0 10 10"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <path
+                                                            d="M2 2 L8 8 M8 2 L2 8"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1.3"
+                                                            strokeLinecap="round"
+                                                            fill="none"
+                                                        />
+                                                    </svg>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            </>
+                        ) : undefined}
+                    </div>
+                </>
             );
         }
 
