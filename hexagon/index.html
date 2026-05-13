@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        :root {
+            --hex-scale: 1.2;
+            --hex-color: #6366f1;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #1a1a1a;
+            background: linear-gradient(#eef2f6, #aeb2b6);
+        }
+
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            width: 456px;
+            height: 456px;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 50%;
+            opacity: 0;
+        }
+
+        .bg-layer2 {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            width: 658px;
+            height: 456px;
+            transform: translate(-50%, -50%);
+            top: 50%;
+            left: 35%;
+            display: none;
+        }
+
+
+        .bg-layer img,
+        .bg-layer2 img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hex-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: calc(286px * 0.866 * var(--hex-scale));
+            height: calc(286px * var(--hex-scale));
+            transition: transform 0.3s ease;
+        }
+
+        /* Создаем эффект взгляда сбоку. НЕ УДАЛЯТЬ */
+        .hex-wrapper.perspective-active {
+            transform: perspective(700px) rotateY(12deg) rotateX(5deg) rotateZ(-9deg);
+        }
+
+        .hex-container {
+            position: absolute;
+            width: calc(var(--hex-height) * 0.866);
+            height: var(--hex-height);
+        }
+
+        /* 1. Задний план (Картон с лучами) */
+        .back-plan {
+            --hex-height: calc(286px * var(--hex-scale));
+            --roundness: 13;
+            --hex-color: #785F5E;
+            z-index: 0;
+        }
+
+        /* 2. Средний план (Металлическая пластина 2мм) */
+        .mid-plan {
+            --hex-height: calc(153px * var(--hex-scale));
+            --roundness: 26;
+            --hex-color: url(#silver-metal);
+            z-index: 20;
+            filter:
+                drop-shadow(0 1px 0px rgba(255, 255, 255, 0.3)) drop-shadow(-2px 2px 2px rgba(0, 0, 0, 0.8));
+        }
+
+        /* 3. Передний план (Морская волна) */
+        .front-plan {
+            --hex-height: calc(149px * var(--hex-scale));
+            --roundness: 26;
+            --hex-color: #046bb2;
+            z-index: 30;
+            /* Настройки позиционирования и масштаба изображения внутри гексагона */
+            --img-scale: 1.1;
+            /* Масштаб (1 = 100%, 1.5 = 150% и т.д.) */
+            --img-offset-x: -117px;
+            /* Смещение по горизонтали */
+            --img-offset-y: 3px;
+            /* Смещение по вертикали */
+        }
+
+        .front-plan .inner-img {
+            transform-origin: 43.3px 50px;
+            /* Центр гексагона в координатах SVG */
+            transform: translate(var(--img-offset-x), var(--img-offset-y)) scale(var(--img-scale));
+        }
+
+        .hex-shape-mask {
+            fill: white;
+            stroke: white;
+            stroke-width: calc(var(--roundness) * 2px);
+            stroke-linejoin: round;
+        }
+
+        .hex-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .hex-shape {
+            fill: var(--hex-color);
+            stroke: var(--hex-color);
+            stroke-width: calc(var(--roundness) * 2px);
+            stroke-linejoin: round;
+            paint-order: fill stroke;
+        }
+
+        .content {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: sans-serif;
+            font-weight: bold;
+            font-size: calc(20px * var(--hex-scale));
+            pointer-events: none;
+            z-index: 40;
+            overflow: hidden;
+        }
+
+        /* Стиль для лучей */
+        .ray {
+            stroke: url(#ray-gradient);
+            stroke-width: 0.5;
+            stroke-linecap: round;
+        }
+
+        .sunburst {
+            position: relative;
+        }
+
+        .line {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: calc(165px + (1 + cos((var(--i) - 3) * 1.047)) * 12px);
+
+            /* (160px радиус - 10px отступ - 15px до края) */
+            height: 1px;
+
+            /* Градиент: прозрачный (старт 10px) -> белый -> прозрачный (конец) */
+            background: linear-gradient(to right, transparent, #fff4 50%, transparent);
+
+            /* Сдвигаем линию, чтобы она начиналась с отступом 10px от центра */
+            transform-origin: left center;
+            transform: rotate(calc(var(--i) * 10deg)) translate(20px);
+        }
+
+        /* Панель настроек */
+        .settings-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-family: sans-serif;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .settings-panel h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            font-weight: normal;
+            color: #ccc;
+        }
+
+        .settings-panel .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .settings-panel label {
+            font-size: 14px;
+        }
+
+        .color-options {
+            display: flex;
+            gap: 8px;
+        }
+
+        .color-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .color-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .color-btn.active {
+            border-color: white;
+            box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="settings-panel">
+        <h3>Настройки</h3>
+        <div class="setting-group">
+            <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="checkbox" id="perspective-toggle" checked>
+                Включить перспективу
+            </label>
+        </div>
+        <div class="setting-group">
+            <label>Цвет обложки:</label>
+            <div class="color-options">
+                <div class="color-btn" style="background: linear-gradient(to bottom right, #4683bb, #1f4a76);"
+                    data-color="url(#sky-blue)" title="Sky Blue (Градиент)"></div>
+                <div class="color-btn" style="background: linear-gradient(to bottom right, #e0785a, #c94824);"
+                    data-color="url(#orange)" title="Оранж (Градиент)"></div>
+                <div class="color-btn" style="background: linear-gradient(to bottom right, #78AC56, #619718);"
+                    data-color="url(#green)" title="Грин (Градиент)"></div>
+                <div class="color-btn active" style="background: #785F5E;" data-color="#785F5E" title="#785F5E"></div>
+                <div class="color-btn" style="background: #843918;" data-color="#843918" title="#843918"></div>
+                <div class="color-btn" style="background: #283345;" data-color="#283345" title="#283345"></div>
+                <div class="color-btn" style="background: #B99673;" data-color="#B99673" title="#B99673"></div>
+            </div>
+        </div>
+    </div>
+
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <!-- Градиент фона: 30 градусов влево -->
+            <linearGradient id="sky-blue" x1="80%" y1="0%" x2="20%" y2="100%">
+                <stop offset="0%" stop-color="#4683bb" />
+                <stop offset="100%" stop-color="#1f4a76" />
+            </linearGradient>
+
+            <linearGradient id="orange" x1="80%" y1="0%" x2="20%" y2="100%">
+                <stop offset="0%" stop-color="#e0785a" />
+                <stop offset="100%" stop-color="#c94824" />
+            </linearGradient>
+
+            <linearGradient id="green" x1="80%" y1="0%" x2="20%" y2="100%">
+                <stop offset="0%" stop-color="#78AC56" />
+                <stop offset="100%" stop-color="#619718" />
+            </linearGradient>
+
+
+
+            <!-- Реалистичный металл -->
+            <linearGradient id="silver-metal" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#7a7a7a" />
+                <stop offset="15%" stop-color="#cfcfcf" />
+                <stop offset="35%" stop-color="#ffffff" />
+                <stop offset="50%" stop-color="#999999" />
+                <stop offset="65%" stop-color="#e0e0e0" />
+                <stop offset="100%" stop-color="#555555" />
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <div class="bg-layer">
+        <img src="40608851_1920_q70.webp" alt="background">
+    </div>
+
+    <div class="bg-layer2">
+        <img src="44872491.jpg.webp" alt="background">
+    </div>
+
+
+    <div class="hex-wrapper perspective-active">
+        <!-- 1. Задний план с лучами -->
+        <div class="hex-container back-plan">
+            <svg viewBox="0 0 86.6 100" class="hex-svg">
+                <path class="hex-shape" d="M 43.3 0 L 86.6 25 L 86.6 75 L 43.3 100 L 0 75 L 0 25 Z" />
+            </svg>
+        </div>
+
+        <div class="sunburst">
+            <!-- Создаем 36 линий -->
+            <div class="line" style="--i:0"></div>
+            <div class="line" style="--i:1"></div>
+            <div class="line" style="--i:2"></div>
+            <div class="line" style="--i:3"></div>
+            <div class="line" style="--i:4"></div>
+            <div class="line" style="--i:5"></div>
+            <div class="line" style="--i:6"></div>
+            <div class="line" style="--i:7"></div>
+            <div class="line" style="--i:8"></div>
+            <div class="line" style="--i:9"></div>
+            <div class="line" style="--i:10"></div>
+            <div class="line" style="--i:11"></div>
+            <div class="line" style="--i:12"></div>
+            <div class="line" style="--i:13"></div>
+            <div class="line" style="--i:14"></div>
+            <div class="line" style="--i:15"></div>
+            <div class="line" style="--i:16"></div>
+            <div class="line" style="--i:17"></div>
+            <div class="line" style="--i:18"></div>
+            <div class="line" style="--i:19"></div>
+            <div class="line" style="--i:20"></div>
+            <div class="line" style="--i:21"></div>
+            <div class="line" style="--i:22"></div>
+            <div class="line" style="--i:23"></div>
+            <div class="line" style="--i:24"></div>
+            <div class="line" style="--i:25"></div>
+            <div class="line" style="--i:26"></div>
+            <div class="line" style="--i:27"></div>
+            <div class="line" style="--i:28"></div>
+            <div class="line" style="--i:29"></div>
+            <div class="line" style="--i:30"></div>
+            <div class="line" style="--i:31"></div>
+            <div class="line" style="--i:32"></div>
+            <div class="line" style="--i:33"></div>
+            <div class="line" style="--i:34"></div>
+            <div class="line" style="--i:35"></div>
+        </div>
+
+
+
+        <div class="hex-container mid-plan">
+            <svg viewBox="0 0 86.6 100" class="hex-svg">
+                <path class="hex-shape" d="M 43.3 0 L 86.6 25 L 86.6 75 L 43.3 100 L 0 75 L 0 25 Z" />
+            </svg>
+        </div>
+
+        <div class="hex-container front-plan">
+            <svg viewBox="0 0 86.6 100" class="hex-svg">
+                <defs>
+                    <mask id="front-hex-mask">
+                        <path class="hex-shape-mask" d="M 43.3 0 L 86.6 25 L 86.6 75 L 43.3 100 L 0 75 L 0 25 Z" />
+                    </mask>
+                </defs>
+                <!-- Группа с маской остается на месте, а изображение внутри нее можно двигать и масштабировать -->
+                <g mask="url(#front-hex-mask)">
+                    <image class="inner-img" href="diting_result.jpeg" x="-26" y="-26" width="300" height="170"
+                        preserveAspectRatio="xMidYMid slice" />
+                </g>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorBtns = document.querySelectorAll('.color-btn');
+            const backPlan = document.querySelector('.back-plan');
+            const perspectiveToggle = document.getElementById('perspective-toggle');
+            const hexWrapper = document.querySelector('.hex-wrapper');
+
+            perspectiveToggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    hexWrapper.classList.add('perspective-active');
+                } else {
+                    hexWrapper.classList.remove('perspective-active');
+                }
+            });
+
+            colorBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    // Убираем класс active у всех кнопок
+                    colorBtns.forEach(b => b.classList.remove('active'));
+                    // Добавляем класс active нажатой кнопке
+                    btn.classList.add('active');
+
+                    // Меняем цвет
+                    const color = btn.getAttribute('data-color');
+                    backPlan.style.setProperty('--hex-color', color);
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
