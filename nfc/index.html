@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web NFC Сканер</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --primary: #007bff;
+            --text: #333333;
+            --success: #28a745;
+            --error: #dc3545;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.2s;
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 500;
+            background: #eee;
+        }
+
+        .info-box {
+            margin-top: 20px;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            word-break: break-all;
+            display: none;
+        }
+
+        .info-box h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+        }
+
+        .error {
+            color: white;
+            background-color: var(--error) !important;
+        }
+
+        .success {
+            color: white;
+            background-color: var(--success) !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Сканер NFC меток</h1>
+        <p>Нажмите кнопку ниже и поднесите NFC-метку к задней панели телефона.</p>
+        <button id="scanBtn" class="btn">Запустить сканирование</button>
+
+        <div id="status">Ожидание запуска...</div>
+
+        <div id="resultBox" class="info-box">
+            <h3>Данные метки:</h3>
+            <p><strong>ID (Серийный номер):</strong> <span id="tagId">-</span></p>
+            <p><strong>Записи (NDEF):</strong></p>
+            <div id="tagRecords"></div>
+        </div>
+    </div>
+
+    <script>
+        const scanBtn = document.getElementById('scanBtn');
+        const statusDiv = document.getElementById('status');
+        const resultBox = document.getElementById('resultBox');
+        const tagIdSpan = document.getElementById('tagId');
+        const tagRecordsDiv = document.getElementById('tagRecords');
+
+        // Проверка поддержки Web NFC браузером
+        if (!('NDEFReader' in window)) {
+            statusDiv.textContent = "Web NFC не поддерживается этим браузером или устройством. Используйте Chrome на Android.";
+            statusDiv.className = "error";
+            scanBtn.disabled = true;
+        }
+
+        scanBtn.addEventListener('click', async () => {
+            statusDiv.textContent = "Активация модуля NFC...";
+            statusDiv.className = "";
+            resultBox.style.display = "none";
+
+            try {
+                // Создаем экземпляр считывателя NDEF
+                const ndef = new NDEFReader();
+
+                // Запускаем процесс сканирования
+                await ndef.scan();
+
+                statusDiv.textContent = "Приложите NFC-метку к устройству...";
+                statusDiv.className = "success";
+
+                // Обработчик события успешного чтения метки
+                ndef.addEventListener("reading", ({ message, serialNumber }) => {
+                    // Отображаем блок с результатами
+                    resultBox.style.display = "block";
+
+                    // Выводим ID (серийный номер) метки
+                    tagIdSpan.textContent = serialNumber || "Недоступен";
+
+                    // Очищаем старые записи
+                    tagRecordsDiv.innerHTML = "";
+
+                    // Декодируем NDEF сообщения внутри метки
+                    const textDecoder = new TextDecoder();
+
+                    message.records.forEach((record, index) => {
+                        const recordElement = document.createElement("p");
+                        let content = "";
+
+                        if (record.recordType === "text") {
+                            content = textDecoder.decode(record.data);
+                        } else if (record.recordType === "url") {
+                            content = textDecoder.decode(record.data);
+                        } else {
+                            content = `[Тип данных: ${record.recordType}] (Бинарные данные)`;
+                        }
+
+                        recordElement.innerHTML = `Запись #${index + 1} (${record.recordType}): <strong>${content}</strong>`;
+                        tagRecordsDiv.appendChild(recordElement);
+                    });
+                });
+
+                // Обработчик ошибок чтения
+                ndef.addEventListener("readingerror", () => {
+                    statusDiv.textContent = "Ошибка чтения. Попробуйте приложить метку еще раз.";
+                    statusDiv.className = "error";
+                });
+
+            } catch (error) {
+                statusDiv.textContent = `Ошибка: ${error.message}`;
+                statusDiv.className = "error";
+                console.error("Ошибка сканирования NFC:", error);
+            }
+        });
+    </script>
+
+</body>
+
+</html>
