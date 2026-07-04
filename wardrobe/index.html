@@ -1,0 +1,673 @@
+﻿<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Макет гардеробной-корабля</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        background: #f0f2f5;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+      canvas {
+        background: #ffffff;
+        border: 2px solid #2c3e50;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        cursor: move;
+      }
+      .info {
+        margin-top: 15px;
+        max-width: 640px;
+        text-align: center;
+        color: #555;
+        line-height: 1.6;
+      }
+      .controls {
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #333;
+      }
+      .controls label {
+        cursor: pointer;
+        user-select: none;
+      }
+      .legend {
+        margin-top: 10px;
+        font-size: 13px;
+        text-align: left;
+        display: inline-block;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Интерактивный макет (Перетаскивайте лампу)</h2>
+    <div class="controls">
+      <label><input type="checkbox" id="showCabinets" checked /> Показать мебель (шкафы)</label>
+    </div>
+    <canvas id="roomCanvas" width="600" height="600"></canvas>
+    <div class="info">
+      <b>Управление:</b> Зажмите левую кнопку мыши на желтой лампе и двигайте её
+      по комнате, чтобы найти идеальное положение проводки.
+      <div class="legend">
+        <b>Шкафы по стенам CD — DE — EF</b> (типовая глубина 60 см):<br />
+        — <b>Двойная вешалка</b> — верхняя и нижняя штанги (рубашки, брюки)<br />
+        — <b>Длинная вешалка</b> — одна штанга под пальто и платья<br />
+        — <b>Полки</b> — свитера, сумки, коробки<br />
+        — <b>Ящики</b> — бельё и мелочи<br />
+        — <b>Обувница</b> — наклонные полки для обуви
+      </div>
+      <div class="legend" id="luxStats"></div>
+    </div>
+
+    <script>
+      const canvas = document.getElementById('roomCanvas');
+      const ctx = canvas.getContext('2d');
+
+      const SCALE = 1.3;
+      const offsetX = -13;
+      const offsetY = 227;
+      const CABINET_DEPTH = 60;
+      const CEILING_HEIGHT = 260;
+      const LAMP_LUMENS = 3600;
+      const LAMP_WATTS = 40;
+      const BEAM_ANGLE = 120;
+      const BEAM_HALF_RAD = ((BEAM_ANGLE / 2) * Math.PI) / 180;
+      const BEAM_FLOOR_RADIUS = CEILING_HEIGHT * Math.tan(BEAM_HALF_RAD);
+      const OPTIMAL_LAMP = { x: 189, y: 68 };
+      const GA_WALL = 109;
+      const GA_STUB = 29;
+      const GA_DOOR = 80;
+
+      const roomPoints = [
+        { name: 'G', x: 87.0, y: 71.2 },
+        { name: 'A', x: 163.5, y: -5.5 },
+        { name: 'B', x: 176.0, y: 6.0 },
+        { name: 'C', x: 272.3, y: -94.6 },
+        { name: 'D', x: 395.1, y: 31.0 },
+        { name: 'E', x: 210.2, y: 207.4 },
+        { name: 'F', x: 88.9, y: 207.4 },
+      ];
+
+      const cabinetWalls = [
+        {
+          from: 'C',
+          to: 'D',
+          modules: [
+            { width: 58, type: 'shelves', label: 'полки' },
+            { width: 58, type: 'hang-long', label: 'пальто' },
+            { width: 60, type: 'shelves', label: 'полки' },
+          ],
+        },
+        {
+          from: 'D',
+          to: 'E',
+          modules: [
+            { width: 64, type: 'hang-long', label: 'пальто' },
+            { width: 64, type: 'hang-drawers', label: 'веш.+ящ.' },
+            { width: 64, type: 'shelves', label: 'полки' },
+            { width: 64, type: 'hang-double', label: '2×штанга' },
+          ],
+        },
+        {
+          from: 'F',
+          to: 'E',
+          modules: [
+            { width: 61, type: 'hang-double', label: '2×штанга' },
+            { width: 61, type: 'shoes', label: 'обувь' },
+          ],
+        },
+      ];
+
+      let lamp = { x: OPTIMAL_LAMP.x, y: OPTIMAL_LAMP.y, radius: 12, isDragging: false };
+      let showCabinets = true;
+
+      function getPoint(name) {
+        return roomPoints.find((p) => p.name === name);
+      }
+      const CABINET_WALL_KEYS = [
+        ['C', 'D'],
+        ['D', 'E'],
+        ['F', 'E'],
+      ];
+
+      function distToSegment(px, py, p1, p2) {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const len2 = dx * dx + dy * dy || 1;
+        const t = Math.max(0, Math.min(1, ((px - p1.x) * dx + (py - p1.y) * dy) / len2));
+        return Math.hypot(px - (p1.x + t * dx), py - (p1.y + t * dy));
+      }
+
+      function pointInRoom(x, y) {
+        let inside = false;
+        for (let i = 0; i < roomPoints.length; i++) {
+          const p1 = roomPoints[i];
+          const p2 = roomPoints[(i + 1) % roomPoints.length];
+          if ((p1.y > y) !== (p2.y > y) && x < ((p2.x - p1.x) * (y - p1.y)) / (p2.y - p1.y) + p1.x) {
+            inside = !inside;
+          }
+        }
+        return inside;
+      }
+
+      function isWalkable(x, y) {
+        if (!pointInRoom(x, y)) return false;
+        return CABINET_WALL_KEYS.every(([a, b]) => {
+          const p1 = getPoint(a);
+          const p2 = getPoint(b);
+          return distToSegment(x, y, p1, p2) >= CABINET_DEPTH - 1;
+        });
+      }
+
+      function calcLux(lx, ly, fx, fy, fz = 0) {
+        const dx = fx - lx;
+        const dy = fy - ly;
+        const dh = CEILING_HEIGHT - fz;
+        const distCm = Math.hypot(dx, dy, dh);
+        const cosTheta = dh / distCm;
+        if (cosTheta < Math.cos(BEAM_HALF_RAD)) return 0;
+        const distM = distCm / 100;
+        return ((LAMP_LUMENS / Math.PI) * cosTheta ** 3) / (distM * distM);
+      }
+
+      function evaluateLighting(lx, ly) {
+        const floor = [];
+        const eye = [];
+        for (let x = 75; x <= 385; x += 20) {
+          for (let y = -85; y <= 215; y += 20) {
+            if (!isWalkable(x, y)) continue;
+            floor.push(calcLux(lx, ly, x, y, 0));
+            eye.push(calcLux(lx, ly, x, y, 160));
+          }
+        }
+        const avg = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+        return {
+          floorMin: Math.min(...floor),
+          floorAvg: avg(floor),
+          eyeMin: Math.min(...eye),
+          eyeAvg: avg(eye),
+        };
+      }
+
+      function clipToRoom() {
+        ctx.beginPath();
+        roomPoints.forEach((p, index) => {
+          const cp = toCanvas(p);
+          if (index === 0) ctx.moveTo(cp.x, cp.y);
+          else ctx.lineTo(cp.x, cp.y);
+        });
+        ctx.closePath();
+        ctx.clip();
+      }
+
+      function drawLightSpread(lx, ly) {
+        const center = toCanvas({ x: lx, y: ly });
+        const glowRadius = 175 * SCALE;
+        const grad = ctx.createRadialGradient(
+          center.x,
+          center.y,
+          0,
+          center.x,
+          center.y,
+          glowRadius,
+        );
+        grad.addColorStop(0, 'rgba(255, 238, 130, 0.38)');
+        grad.addColorStop(0.45, 'rgba(255, 220, 90, 0.16)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.save();
+        clipToRoom();
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+      }
+
+      function updateLuxStats(lx, ly) {
+        const stats = evaluateLighting(lx, ly);
+        const atOptimal = Math.hypot(lx - OPTIMAL_LAMP.x, ly - OPTIMAL_LAMP.y) < 2;
+        const el = document.getElementById('luxStats');
+        el.innerHTML =
+          '<b>Расчёт освещения</b> (потолок ' +
+          CEILING_HEIGHT +
+          ' см, ' +
+          LAMP_WATTS +
+          ' В / ' +
+          LAMP_LUMENS +
+          ' лм, угол ' +
+          BEAM_ANGLE +
+          '°):<br>' +
+          '— <b>Идеальная точка:</b> (' +
+          OPTIMAL_LAMP.x +
+          ', ' +
+          OPTIMAL_LAMP.y +
+          ') см — центр прохода между шкафами<br>' +
+          '— <b>На полу:</b> мин ' +
+          Math.round(stats.floorMin) +
+          ' лк, среднее ' +
+          Math.round(stats.floorAvg) +
+          ' лк<br>' +
+          '— <b>На уровне одежды (160 см):</b> мин ' +
+          Math.round(stats.eyeMin) +
+          ' лк, среднее ' +
+          Math.round(stats.eyeAvg) +
+          ' лк<br>' +
+
+          (atOptimal
+            ? '— <span style="color:#27ae60">Сейчас выбрана оптимальная точка</span>'
+            : '— Сместите люстру к (' + OPTIMAL_LAMP.x + ', ' + OPTIMAL_LAMP.y + ') для равномерного света');
+      }
+
+
+
+      function drawLampDistanceLines() {
+        const corners = [
+          { name: 'G', color: '#e67e22' },
+          { name: 'B', color: '#2980b9' },
+          { name: 'D', color: '#8e44ad' },
+        ];
+
+        corners.forEach(({ name, color }) => {
+          const corner = getPoint(name);
+          const lengthCm = dist(corner, lamp);
+          const c1 = toCanvas(corner);
+          const c2 = toCanvas(lamp);
+          const mx = (c1.x + c2.x) / 2;
+          const my = (c1.y + c2.y) / 2;
+
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(c1.x, c1.y);
+          ctx.lineTo(c2.x, c2.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          const label = name + ' — ' + Math.round(lengthCm) + ' см';
+          ctx.font = 'bold 11px sans-serif';
+          const tw = ctx.measureText(label).width;
+          ctx.fillRect(mx - tw / 2 - 4, my - 9, tw + 8, 16);
+          ctx.strokeRect(mx - tw / 2 - 4, my - 9, tw + 8, 16);
+          ctx.fillStyle = color;
+          ctx.textAlign = 'center';
+          ctx.fillText(label, mx, my + 3);
+        });
+      }
+      function toCanvas(pt) {
+        return {
+          x: offsetX + pt.x * SCALE,
+          y: offsetY + pt.y * SCALE,
+        };
+      }
+
+      function toCentimeters(mx, my) {
+        return {
+          x: (mx - offsetX) / SCALE,
+          y: (my - offsetY) / SCALE,
+        };
+      }
+
+      function dist(a, b) {
+        return Math.hypot(b.x - a.x, b.y - a.y);
+      }
+
+      function normalize(v) {
+        const len = Math.hypot(v.x, v.y) || 1;
+        return { x: v.x / len, y: v.y / len };
+      }
+
+      function add(a, b, scale = 1) {
+        return { x: a.x + b.x * scale, y: a.y + b.y * scale };
+      }
+
+      function lerp(a, b, t) {
+        return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      }
+
+      function roomCentroid() {
+        let area = 0;
+        let cx = 0;
+        let cy = 0;
+        for (let i = 0; i < roomPoints.length; i++) {
+          const p1 = roomPoints[i];
+          const p2 = roomPoints[(i + 1) % roomPoints.length];
+          const cross = p1.x * p2.y - p2.x * p1.y;
+          area += cross;
+          cx += (p1.x + p2.x) * cross;
+          cy += (p1.y + p2.y) * cross;
+        }
+        area *= 0.5;
+        return { x: cx / (6 * area), y: cy / (6 * area) };
+      }
+
+      function inwardNormal(p1, p2, center) {
+        const wall = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
+        let normal = { x: -wall.y, y: wall.x };
+        const mid = lerp(p1, p2, 0.5);
+        const toCenter = { x: center.x - mid.x, y: center.y - mid.y };
+        if (normal.x * toCenter.x + normal.y * toCenter.y < 0) {
+          normal = { x: -normal.x, y: -normal.y };
+        }
+        return normal;
+      }
+
+      function drawRod(from, to, color = '#8e44ad', width = 2) {
+        const a = toCanvas(from);
+        const b = toCanvas(to);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+
+      function drawShelfLine(from, to, color = '#95a5a6') {
+        drawRod(from, to, color, 1.2);
+      }
+
+      function drawModuleInterior(wallA, wallB, inward, type, label) {
+        const depthLines = {
+          near: 18,
+          mid: 30,
+          far: 42,
+          front: 52,
+        };
+
+        const leftNear = add(wallA, inward, depthLines.near);
+        const rightNear = add(wallB, inward, depthLines.near);
+        const leftMid = add(wallA, inward, depthLines.mid);
+        const rightMid = add(wallB, inward, depthLines.mid);
+        const leftFar = add(wallA, inward, depthLines.far);
+        const rightFar = add(wallB, inward, depthLines.far);
+        const leftFront = add(wallA, inward, depthLines.front);
+        const rightFront = add(wallB, inward, depthLines.front);
+
+        if (type === 'hang-long') {
+          drawRod(leftMid, rightMid, '#8e44ad', 2.5);
+        }
+
+        if (type === 'hang-double') {
+          drawRod(leftNear, rightNear, '#8e44ad', 2.2);
+          drawRod(leftFar, rightFar, '#9b59b6', 2.2);
+        }
+
+        if (type === 'hang-drawers') {
+          drawRod(leftMid, rightMid, '#8e44ad', 2.5);
+          const drawerCount = 3;
+          for (let i = 0; i < drawerCount; i++) {
+            const t1 = 0.12 + i * 0.26;
+            const t2 = t1 + 0.18;
+            const p1 = lerp(wallA, wallB, t1);
+            const p2 = lerp(wallA, wallB, t2);
+            const p3 = add(p2, inward, 22);
+            const p4 = add(p1, inward, 22);
+            const c1 = toCanvas(p1);
+            const c2 = toCanvas(p2);
+            const c3 = toCanvas(p3);
+            const c4 = toCanvas(p4);
+            ctx.fillStyle = '#bdc3c7';
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(c1.x, c1.y);
+            ctx.lineTo(c2.x, c2.y);
+            ctx.lineTo(c3.x, c3.y);
+            ctx.lineTo(c4.x, c4.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
+        }
+
+        if (type === 'shelves') {
+          [depthLines.near, depthLines.mid, depthLines.far, depthLines.front].forEach((d) => {
+            drawShelfLine(add(wallA, inward, d), add(wallB, inward, d));
+          });
+        }
+
+        if (type === 'shoes') {
+          drawShelfLine(leftFront, rightFront, '#16a085', 1.5);
+          const rows = 4;
+          for (let i = 0; i < rows; i++) {
+            const t = 0.15 + i * 0.18;
+            const heel = lerp(wallA, wallB, t);
+            const toe = add(heel, inward, 38);
+            const c1 = toCanvas(heel);
+            const c2 = toCanvas(toe);
+            ctx.strokeStyle = '#1abc9c';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(c1.x, c1.y);
+            ctx.lineTo(c2.x, c2.y);
+            ctx.stroke();
+          }
+        }
+
+        const labelPoint = add(lerp(wallA, wallB, 0.5), inward, 28);
+        const labelCanvas = toCanvas(labelPoint);
+        ctx.fillStyle = '#2c3e50';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, labelCanvas.x, labelCanvas.y + 3);
+      }
+
+      function drawCabinets(center) {
+        cabinetWalls.forEach((wallConfig) => {
+          const p1 = getPoint(wallConfig.from);
+          const p2 = getPoint(wallConfig.to);
+          const wallDir = normalize({ x: p2.x - p1.x, y: p2.y - p1.y });
+          const inward = inwardNormal(p1, p2, center);
+          let pos = 0;
+
+          wallConfig.modules.forEach((mod, index) => {
+            const wallA = add(p1, wallDir, pos);
+            const wallB = add(p1, wallDir, pos + mod.width);
+            const innerA = add(wallA, inward, CABINET_DEPTH);
+            const innerB = add(wallB, inward, CABINET_DEPTH);
+
+            const cA = toCanvas(wallA);
+            const cB = toCanvas(wallB);
+            const iA = toCanvas(innerA);
+            const iB = toCanvas(innerB);
+
+            ctx.fillStyle = index % 2 === 0 ? 'rgba(189, 195, 199, 0.85)' : 'rgba(210, 215, 211, 0.9)';
+            ctx.strokeStyle = '#7f8c8d';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(cA.x, cA.y);
+            ctx.lineTo(cB.x, cB.y);
+            ctx.lineTo(iB.x, iB.y);
+            ctx.lineTo(iA.x, iA.y);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            drawModuleInterior(wallA, wallB, inward, mod.type, mod.label);
+            pos += mod.width;
+          });
+        });
+      }
+
+      function drawRoom() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const center = roomCentroid();
+
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 4;
+        ctx.fillStyle = 'rgba(236, 240, 241, 0.4)';
+        ctx.beginPath();
+        roomPoints.forEach((p, index) => {
+          let cp = toCanvas(p);
+          if (index === 0) ctx.moveTo(cp.x, cp.y);
+          else ctx.lineTo(cp.x, cp.y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+        ctx.fill();
+
+        if (showCabinets) {
+          drawCabinets(center);
+        }
+
+        drawLightSpread(lamp.x, lamp.y);
+
+        let lampPos = toCanvas(lamp);
+
+        const cpG = toCanvas(roomPoints[0]);
+        const cpA = toCanvas(roomPoints[1]);
+        const stubT = GA_STUB / GA_WALL;
+        const doorStart = {
+          x: cpG.x + (cpA.x - cpG.x) * stubT,
+          y: cpG.y + (cpA.y - cpG.y) * stubT,
+        };
+        ctx.strokeStyle = '#e67e22';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(doorStart.x, doorStart.y);
+        ctx.lineTo(cpA.x, cpA.y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#c0392b';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center';
+
+        function drawWallLabel(p1, p2, text) {
+          let cp1 = toCanvas(p1);
+          let cp2 = toCanvas(p2);
+          let mx = (cp1.x + cp2.x) / 2;
+          let my = (cp1.y + cp2.y) / 2;
+          ctx.fillText(text, mx, my - 10);
+        }
+
+        drawWallLabel(roomPoints[0], roomPoints[1], '109');
+        drawWallLabel(
+          roomPoints[0],
+          {
+            x: roomPoints[0].x + (roomPoints[1].x - roomPoints[0].x) * (GA_STUB / GA_WALL / 2),
+            y: roomPoints[0].y + (roomPoints[1].y - roomPoints[0].y) * (GA_STUB / GA_WALL / 2),
+          },
+          '29',
+        );
+        drawWallLabel(
+          {
+            x: roomPoints[0].x + (roomPoints[1].x - roomPoints[0].x) * (GA_STUB / GA_WALL),
+            y: roomPoints[0].y + (roomPoints[1].y - roomPoints[0].y) * (GA_STUB / GA_WALL),
+          },
+          roomPoints[1],
+          '80 (дверь)',
+        );
+        drawWallLabel(roomPoints[1], roomPoints[2], '17');
+        drawWallLabel(roomPoints[2], roomPoints[3], '140');
+        drawWallLabel(roomPoints[3], roomPoints[4], '176');
+        drawWallLabel(roomPoints[4], roomPoints[5], '256');
+        drawWallLabel(roomPoints[5], roomPoints[6], '122');
+        drawWallLabel(roomPoints[6], roomPoints[0], '137');
+
+        ctx.fillStyle = '#34495e';
+        ctx.font = 'bold 14px sans-serif';
+        roomPoints.forEach((p) => {
+          let cp = toCanvas(p);
+          let offsetXLabel = p.x > 200 ? 15 : -15;
+          let offsetYLabel = p.y > 120 ? 15 : -15;
+          ctx.fillText(p.name, cp.x + offsetXLabel, cp.y + offsetYLabel);
+        });
+
+        ctx.font = '10px sans-serif';
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillText('внутр.', cpA.x + 12, cpA.y + 14);
+
+        let cpB = toCanvas(roomPoints[2]);
+        ctx.fillStyle = '#2980b9';
+        ctx.fillText('наруж.', cpB.x + 8, cpB.y - 10);
+
+        drawLampDistanceLines();
+
+        const opt = toCanvas(OPTIMAL_LAMP);
+        ctx.strokeStyle = '#27ae60';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(opt.x - 7, opt.y);
+        ctx.lineTo(opt.x + 7, opt.y);
+        ctx.moveTo(opt.x, opt.y - 7);
+        ctx.lineTo(opt.x, opt.y + 7);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(lampPos.x, lampPos.y, 18, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(lampPos.x, lampPos.y, lamp.radius, 0, 2 * Math.PI);
+        ctx.fillStyle = '#f1c40f';
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#d35400';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('LED ' + LAMP_WATTS + 'W / ' + LAMP_LUMENS + 'lm / ' + BEAM_ANGLE + '°', lampPos.x, lampPos.y - 24);
+        if (!lamp.isDragging) {
+          updateLuxStats(lamp.x, lamp.y);
+        }
+      }
+
+      canvas.addEventListener('mousedown', (e) => {
+        let rect = canvas.getBoundingClientRect();
+        let mx = e.clientX - rect.left;
+        let my = e.clientY - rect.top;
+        let lampPos = toCanvas(lamp);
+
+        let distLamp = Math.sqrt((mx - lampPos.x) ** 2 + (my - lampPos.y) ** 2);
+        if (distLamp < lamp.radius + 10) {
+          lamp.isDragging = true;
+        }
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (lamp.isDragging) {
+          let rect = canvas.getBoundingClientRect();
+          let mx = e.clientX - rect.left;
+          let my = e.clientY - rect.top;
+          let cmPos = toCentimeters(mx, my);
+          lamp.x = cmPos.x;
+          lamp.y = cmPos.y;
+          drawRoom();
+        }
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        lamp.isDragging = false;
+        drawRoom();
+      });
+      canvas.addEventListener('mouseleave', () => {
+        if (lamp.isDragging) {
+          lamp.isDragging = false;
+          drawRoom();
+        }
+      });
+
+      document.getElementById('showCabinets').addEventListener('change', (e) => {
+        showCabinets = e.target.checked;
+        drawRoom();
+      });
+
+      drawRoom();
+    </script>
+  </body>
+</html>
+
+
