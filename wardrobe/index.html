@@ -2,7 +2,8 @@
 <html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <title>Макет гардеробной-корабля</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Макет гардеробной</title>
     <style>
       body {
         font-family: sans-serif;
@@ -18,6 +19,9 @@
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         cursor: move;
+        touch-action: none;
+        max-width: 100%;
+        height: auto;
       }
       .info {
         margin-top: 15px;
@@ -44,14 +48,14 @@
     </style>
   </head>
   <body>
-    <h2>Интерактивный макет (Перетаскивайте лампу)</h2>
+    <h2>Интерактивный макет</h2>
     <div class="controls">
       <label><input type="checkbox" id="showCabinets" checked /> Показать мебель (шкафы)</label>
     </div>
     <canvas id="roomCanvas" width="600" height="600"></canvas>
     <div class="info">
-      <b>Управление:</b> Зажмите левую кнопку мыши на желтой лампе и двигайте её
-      по комнате, чтобы найти идеальное положение проводки.
+      <b>Управление:</b> Зажмите левую кнопку мыши (или коснитесь на телефоне) желтой
+      лампы и двигайте её по комнате, чтобы найти идеальное положение проводки.
       <div class="legend">
         <b>Шкафы по стенам CD — DE — EF</b> (типовая глубина 60 см):<br />
         — <b>Двойная вешалка</b> — верхняя и нижняя штанги (рубашки, брюки)<br />
@@ -625,40 +629,77 @@
         }
       }
 
-      canvas.addEventListener('mousedown', (e) => {
-        let rect = canvas.getBoundingClientRect();
-        let mx = e.clientX - rect.left;
-        let my = e.clientY - rect.top;
-        let lampPos = toCanvas(lamp);
+      function getCanvasCoords(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+          x: (clientX - rect.left) * scaleX,
+          y: (clientY - rect.top) * scaleY,
+        };
+      }
 
-        let distLamp = Math.sqrt((mx - lampPos.x) ** 2 + (my - lampPos.y) ** 2);
+      function tryStartDrag(mx, my) {
+        const lampPos = toCanvas(lamp);
+        const distLamp = Math.hypot(mx - lampPos.x, my - lampPos.y);
         if (distLamp < lamp.radius + 10) {
           lamp.isDragging = true;
         }
+      }
+
+      function dragLamp(mx, my) {
+        if (!lamp.isDragging) return;
+        const cmPos = toCentimeters(mx, my);
+        lamp.x = cmPos.x;
+        lamp.y = cmPos.y;
+        drawRoom();
+      }
+
+      function endDrag() {
+        if (!lamp.isDragging) return;
+        lamp.isDragging = false;
+        drawRoom();
+      }
+
+      canvas.addEventListener('mousedown', (e) => {
+        const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+        tryStartDrag(x, y);
       });
 
       canvas.addEventListener('mousemove', (e) => {
-        if (lamp.isDragging) {
-          let rect = canvas.getBoundingClientRect();
-          let mx = e.clientX - rect.left;
-          let my = e.clientY - rect.top;
-          let cmPos = toCentimeters(mx, my);
-          lamp.x = cmPos.x;
-          lamp.y = cmPos.y;
-          drawRoom();
-        }
+        const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+        dragLamp(x, y);
       });
 
-      canvas.addEventListener('mouseup', () => {
-        lamp.isDragging = false;
-        drawRoom();
-      });
-      canvas.addEventListener('mouseleave', () => {
-        if (lamp.isDragging) {
-          lamp.isDragging = false;
-          drawRoom();
-        }
-      });
+      canvas.addEventListener('mouseup', endDrag);
+      canvas.addEventListener('mouseleave', endDrag);
+
+      canvas.addEventListener(
+        'touchstart',
+        (e) => {
+          if (e.touches.length !== 1) return;
+          const touch = e.touches[0];
+          const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+          tryStartDrag(x, y);
+          if (lamp.isDragging) e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      canvas.addEventListener(
+        'touchmove',
+        (e) => {
+          if (!lamp.isDragging || e.touches.length !== 1) return;
+          e.preventDefault();
+          const touch = e.touches[0];
+          const { x, y } = getCanvasCoords(touch.clientX, touch.clientY);
+          dragLamp(x, y);
+        },
+        { passive: false }
+      );
+
+      canvas.addEventListener('touchend', endDrag);
+      canvas.addEventListener('touchcancel', endDrag);
 
       document.getElementById('showCabinets').addEventListener('change', (e) => {
         showCabinets = e.target.checked;
