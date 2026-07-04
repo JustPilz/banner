@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Blob Animation</title>
+    <style>
+      body {
+        margin: 0;
+        background: #000;
+        overflow: hidden;
+      }
+
+      .version {
+        position: fixed;
+        top: 5px;
+        left: 5px;
+        color: #888;
+        font-size: 36px;
+        padding: 0;
+        margin: 0;
+      }
+
+      .animationWrapper {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .animation {
+        width: 800px;
+        height: 800px;
+        filter: blur(80px);
+      }
+
+      @keyframes introFade {
+        0% {
+          opacity: var(--o-start);
+          filter: brightness(1.2);
+        }
+        100% {
+          opacity: var(--o-end);
+          filter: brightness(1);
+        }
+      }
+
+      /* Container shake (pure CSS imitation of your JS arrays) */
+      .shake {
+        width: 100%;
+        height: 100%;
+        animation: shakeRotate 40s ease-in-out infinite,
+          shakeX 35s ease-in-out infinite, shakeY 38s ease-in-out infinite;
+      }
+
+      @keyframes shakeRotate {
+        0% {
+          transform: rotate(0deg);
+        }
+        25% {
+          transform: rotate(3deg);
+        }
+        50% {
+          transform: rotate(-2deg);
+        }
+        75% {
+          transform: rotate(4deg);
+        }
+        100% {
+          transform: rotate(0deg);
+        }
+      }
+
+      @keyframes shakeX {
+        0% {
+          translate: 0 0;
+        }
+        25% {
+          translate: -25px 0;
+        }
+        50% {
+          translate: 30px 0;
+        }
+        75% {
+          translate: -20px 0;
+        }
+        100% {
+          translate: 0 0;
+        }
+      }
+
+      @keyframes shakeY {
+        0% {
+          translate: 0 0;
+        }
+        25% {
+          translate: 0 30px;
+        }
+        50% {
+          translate: 0 -20px;
+        }
+        75% {
+          translate: 0 35px;
+        }
+        100% {
+          translate: 0 0;
+        }
+      }
+
+      /* === Blob Animations (infinite loops) === */
+
+      @keyframes blob1 {
+        0% {
+          rx: 180;
+          ry: 140;
+          cx: 300;
+          cy: 350;
+        }
+        25% {
+          rx: 200;
+          ry: 120;
+          cx: 320;
+          cy: 330;
+        }
+        50% {
+          rx: 160;
+          ry: 155;
+          cx: 280;
+          cy: 370;
+        }
+        75% {
+          rx: 190;
+          ry: 130;
+          cx: 310;
+          cy: 340;
+        }
+        100% {
+          rx: 180;
+          ry: 140;
+          cx: 300;
+          cy: 350;
+        }
+      }
+
+      @keyframes blob2 {
+        0% {
+          rx: 200;
+          ry: 150;
+          cx: 520;
+          cy: 400;
+        }
+        25% {
+          rx: 180;
+          ry: 165;
+          cx: 500;
+          cy: 420;
+        }
+        50% {
+          rx: 220;
+          ry: 135;
+          cx: 540;
+          cy: 380;
+        }
+        75% {
+          rx: 190;
+          ry: 160;
+          cx: 510;
+          cy: 410;
+        }
+        100% {
+          rx: 200;
+          ry: 150;
+          cx: 520;
+          cy: 400;
+        }
+      }
+
+      @keyframes blob3 {
+        0% {
+          rx: 160;
+          ry: 120;
+          cx: 380;
+          cy: 250;
+        }
+        25% {
+          rx: 175;
+          ry: 110;
+          cx: 365;
+          cy: 270;
+        }
+        50% {
+          rx: 145;
+          ry: 130;
+          cx: 395;
+          cy: 230;
+        }
+        75% {
+          rx: 170;
+          ry: 115;
+          cx: 375;
+          cy: 260;
+        }
+        100% {
+          rx: 160;
+          ry: 120;
+          cx: 380;
+          cy: 250;
+        }
+      }
+
+      @keyframes blob4 {
+        0% {
+          rx: 190;
+          ry: 135;
+          cx: 440;
+          cy: 480;
+        }
+        25% {
+          rx: 170;
+          ry: 145;
+          cx: 460;
+          cy: 460;
+        }
+        50% {
+          rx: 210;
+          ry: 125;
+          cx: 420;
+          cy: 500;
+        }
+        75% {
+          rx: 180;
+          ry: 140;
+          cx: 450;
+          cy: 470;
+        }
+        100% {
+          rx: 190;
+          ry: 135;
+          cx: 440;
+          cy: 480;
+        }
+      }
+
+      @keyframes blob5 {
+        0% {
+          rx: 170;
+          ry: 125;
+          cx: 280;
+          cy: 500;
+        }
+        25% {
+          rx: 185;
+          ry: 115;
+          cx: 295;
+          cy: 485;
+        }
+        50% {
+          rx: 155;
+          ry: 135;
+          cx: 265;
+          cy: 515;
+        }
+        75% {
+          rx: 180;
+          ry: 120;
+          cx: 290;
+          cy: 490;
+        }
+        100% {
+          rx: 170;
+          ry: 125;
+          cx: 280;
+          cy: 500;
+        }
+      }
+
+      @keyframes blob6 {
+        0% {
+          rx: 175;
+          ry: 130;
+          cx: 540;
+          cy: 280;
+        }
+        25% {
+          rx: 160;
+          ry: 140;
+          cx: 525;
+          cy: 295;
+        }
+        50% {
+          rx: 190;
+          ry: 120;
+          cx: 555;
+          cy: 265;
+        }
+        75% {
+          rx: 170;
+          ry: 135;
+          cx: 530;
+          cy: 285;
+        }
+        100% {
+          rx: 175;
+          ry: 130;
+          cx: 540;
+          cy: 280;
+        }
+      }
+
+      @keyframes op-blob1 {
+        0% {
+          opacity: 0.15;
+        }
+        25% {
+          opacity: 0.28;
+        }
+        50% {
+          opacity: 0.08;
+        }
+        75% {
+          opacity: 0.2;
+        }
+        100% {
+          opacity: 0.15;
+        }
+      }
+
+      @keyframes op-blob2 {
+        0% {
+          opacity: 0.18;
+        }
+        25% {
+          opacity: 0.32;
+        }
+        50% {
+          opacity: 0.1;
+        }
+        75% {
+          opacity: 0.24;
+        }
+        100% {
+          opacity: 0.18;
+        }
+      }
+
+      @keyframes op-blob3 {
+        0% {
+          opacity: 0.12;
+        }
+        25% {
+          opacity: 0.25;
+        }
+        50% {
+          opacity: 0.06;
+        }
+        75% {
+          opacity: 0.18;
+        }
+        100% {
+          opacity: 0.12;
+        }
+      }
+
+      @keyframes op-blob4 {
+        0% {
+          opacity: 0.16;
+        }
+        25% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 0.09;
+        }
+        75% {
+          opacity: 0.22;
+        }
+        100% {
+          opacity: 0.16;
+        }
+      }
+
+      @keyframes op-blob5 {
+        0% {
+          opacity: 0.14;
+        }
+        25% {
+          opacity: 0.27;
+        }
+        50% {
+          opacity: 0.07;
+        }
+        75% {
+          opacity: 0.19;
+        }
+        100% {
+          opacity: 0.14;
+        }
+      }
+
+      @keyframes op-blob6 {
+        0% {
+          opacity: 0.13;
+        }
+        25% {
+          opacity: 0.26;
+        }
+        50% {
+          opacity: 0.05;
+        }
+        75% {
+          opacity: 0.17;
+        }
+        100% {
+          opacity: 0.13;
+        }
+      }
+
+      /* durations match your JS */
+      #blob1 {
+        animation: introFade 2.5s ease-out forwards,
+          blob1 28s ease-in-out infinite, op-blob1 28s ease-in-out infinite 2.5s;
+      }
+      #blob2 {
+        animation: introFade 2.5s ease-out forwards,
+          blob2 32s ease-in-out infinite, op-blob2 32s ease-in-out infinite 2.5s;
+      }
+      #blob3 {
+        animation: introFade 2.5s ease-out forwards,
+          blob3 30s ease-in-out infinite, op-blob3 30s ease-in-out infinite 2.5s;
+      }
+      #blob4 {
+        animation: introFade 2.5s ease-out forwards,
+          blob4 35s ease-in-out infinite, op-blob4 35s ease-in-out infinite 2.5s;
+      }
+      #blob5 {
+        animation: introFade 2.5s ease-out forwards,
+          blob5 33s ease-in-out infinite, op-blob5 33s ease-in-out infinite 2.5s;
+      }
+      #blob6 {
+        animation: introFade 2.5s ease-out forwards,
+          blob6 29s ease-in-out infinite, op-blob6 29s ease-in-out infinite 2.5s;
+      }
+    </style>
+  </head>
+
+  <body>
+    <p class="version">v2</p>
+    <div class="animationWrapper">
+      <div class="animation">
+        <div class="shake">
+          <svg width="100%" height="100%" viewBox="0 0 800 800">
+            <!-- Blob 1 -->
+            <ellipse
+              id="blob1"
+              fill="#5EB1FF"
+              style="--o-start: 0.9; --o-end: 0.15"
+              cx="300"
+              cy="350"
+              rx="180"
+              ry="140"
+            />
+
+            <!-- Blob 2 -->
+            <ellipse
+              id="blob2"
+              fill="url(#g1)"
+              style="--o-start: 1; --o-end: 0.18"
+              cx="520"
+              cy="400"
+              rx="200"
+              ry="150"
+            />
+
+            <!-- Blob 3 -->
+            <ellipse
+              id="blob3"
+              fill="#62D7C4"
+              style="--o-start: 0.85; --o-end: 0.12"
+              cx="380"
+              cy="250"
+              rx="160"
+              ry="120"
+            />
+
+            <!-- Blob 4 -->
+            <ellipse
+              id="blob4"
+              fill="#26D07C"
+              style="--o-start: 0.95; --o-end: 0.16"
+              cx="440"
+              cy="480"
+              rx="190"
+              ry="135"
+            />
+
+            <!-- Blob 5 -->
+            <ellipse
+              id="blob5"
+              fill="#78B9EC"
+              style="--o-start: 0.8; --o-end: 0.14"
+              cx="280"
+              cy="500"
+              rx="170"
+              ry="125"
+            />
+
+            <!-- Blob 6 -->
+            <ellipse
+              id="blob6"
+              fill="url(#g2)"
+              style="--o-start: 0.88; --o-end: 0.13"
+              cx="540"
+              cy="280"
+              rx="175"
+              ry="130"
+            />
+
+            <defs>
+              <radialGradient id="g1" cx="0.5" cy="0.5" r="0.5">
+                <stop offset="0%" stop-color="#7CB5F2" />
+                <stop offset="20%" stop-color="#70C6DD" />
+                <stop offset="40%" stop-color="#64D8C7" />
+                <stop offset="60%" stop-color="#54D5B3" />
+                <stop offset="80%" stop-color="#40D39C" />
+                <stop offset="100%" stop-color="#26D07C" />
+              </radialGradient>
+
+              <radialGradient id="g2" cx="0.4" cy="0.4" r="0.6">
+                <stop offset="0%" stop-color="#78B9EC" />
+                <stop offset="30%" stop-color="#70C6DD" />
+                <stop offset="50%" stop-color="#5FD7C2" />
+                <stop offset="70%" stop-color="#62D7C4" />
+                <stop offset="100%" stop-color="#54D5B3" />
+              </radialGradient>
+            </defs>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React CDN Example</title>
+
+    <!-- React CDN -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/motion@12.23.24/dist/motion.min.js"></script>
+
+    <!-- Babel для трансформации JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f5f5f5;
+      }
+      .app {
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        padding: 10px 15px;
+        margin: 5px;
+        border: none;
+        border-radius: 4px;
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .animationWrapper {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .animation {
+        width: 800px;
+        height: 800px;
+        filter: blur(80px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      console.log('Motion global:', window.Motion);
+      console.log(
+        'Available Motion methods:',
+        Object.keys(window.Motion || {})
+      );
+
+      function AiChatRebrandingAnimation() {
+        const [introComplete, setIntroComplete] = React.useState(false);
+
+        React.useEffect(() => {
+          const timer = setTimeout(() => {
+            setIntroComplete(true);
+          }, 2500);
+
+          return () => clearTimeout(timer);
+        }, []);
+
+        return (
+          <div className="animationWrapper">
+            <div className="animation">
+              <motion.div
+                className="relative"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+                initial={{ scale: 1, opacity: 1 }}
+                animate={
+                  introComplete
+                    ? {
+                        scale: 1,
+                        opacity: 1,
+                        rotate: [0, 3, -2, 4, 0],
+                        x: [0, -25, 30, -20, 0],
+                        y: [0, 30, -20, 35, 0],
+                      }
+                    : {
+                        scale: 1,
+                        opacity: 1,
+                      }
+                }
+                transition={
+                  introComplete
+                    ? {
+                        scale: { duration: 0 },
+                        opacity: { duration: 0 },
+                        rotate: {
+                          duration: 40,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        },
+                        x: {
+                          duration: 35,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        },
+                        y: {
+                          duration: 38,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                        },
+                      }
+                    : {
+                        duration: 2.5,
+                      }
+                }
+              >
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 800 800"
+                  fill="none"
+                  style={{ filter: 'blur(80px)' }}
+                >
+                  {/* Blob 1 - голубой */}
+                  <motion.ellipse
+                    fill="#5EB1FF"
+                    initial={{
+                      opacity: 0.9,
+                      cx: 300,
+                      cy: 350,
+                      rx: 180,
+                      ry: 140,
+                    }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.15, 0.28, 0.08, 0.2, 0.15],
+                            rx: [180, 200, 160, 190, 180],
+                            ry: [140, 120, 155, 130, 140],
+                            cx: [300, 320, 280, 310, 300],
+                            cy: [350, 330, 370, 340, 350],
+                          }
+                        : {
+                            opacity: [0.9, 0.15],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 28,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  {/* Blob 2 - с градиентом (бирюзово-зеленый) */}
+                  <motion.ellipse
+                    fill="url(#gradient1)"
+                    initial={{ opacity: 1, cx: 520, cy: 400, rx: 200, ry: 150 }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.18, 0.32, 0.1, 0.24, 0.18],
+                            rx: [200, 180, 220, 190, 200],
+                            ry: [150, 165, 135, 160, 150],
+                            cx: [520, 500, 540, 510, 520],
+                            cy: [400, 420, 380, 410, 400],
+                          }
+                        : {
+                            opacity: [1, 0.18],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 32,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  {/* Blob 3 - бирюзовый */}
+                  <motion.ellipse
+                    fill="#62D7C4"
+                    initial={{
+                      opacity: 0.85,
+                      cx: 380,
+                      cy: 250,
+                      rx: 160,
+                      ry: 120,
+                    }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.12, 0.25, 0.06, 0.18, 0.12],
+                            rx: [160, 175, 145, 170, 160],
+                            ry: [120, 110, 130, 115, 120],
+                            cx: [380, 365, 395, 375, 380],
+                            cy: [250, 270, 230, 260, 250],
+                          }
+                        : {
+                            opacity: [0.85, 0.12],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 30,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  {/* Blob 4 - зеленый */}
+                  <motion.ellipse
+                    fill="#26D07C"
+                    initial={{
+                      opacity: 0.95,
+                      cx: 440,
+                      cy: 480,
+                      rx: 190,
+                      ry: 135,
+                    }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.16, 0.3, 0.09, 0.22, 0.16],
+                            rx: [190, 170, 210, 180, 190],
+                            ry: [135, 145, 125, 140, 135],
+                            cx: [440, 460, 420, 450, 440],
+                            cy: [480, 460, 500, 470, 480],
+                          }
+                        : {
+                            opacity: [0.95, 0.16],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 35,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  {/* Blob 5 - светло-голубой */}
+                  <motion.ellipse
+                    fill="#78B9EC"
+                    initial={{
+                      opacity: 0.8,
+                      cx: 280,
+                      cy: 500,
+                      rx: 170,
+                      ry: 125,
+                    }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.14, 0.27, 0.07, 0.19, 0.14],
+                            rx: [170, 185, 155, 180, 170],
+                            ry: [125, 115, 135, 120, 125],
+                            cx: [280, 295, 265, 290, 280],
+                            cy: [500, 485, 515, 490, 500],
+                          }
+                        : {
+                            opacity: [0.8, 0.14],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 33,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  {/* Blob 6 - с градиентом (голубо-бирюзовый) */}
+                  <motion.ellipse
+                    fill="url(#gradient2)"
+                    initial={{
+                      opacity: 0.88,
+                      cx: 540,
+                      cy: 280,
+                      rx: 175,
+                      ry: 130,
+                    }}
+                    animate={
+                      introComplete
+                        ? {
+                            opacity: [0.13, 0.26, 0.05, 0.17, 0.13],
+                            rx: [175, 160, 190, 170, 175],
+                            ry: [130, 140, 120, 135, 130],
+                            cx: [540, 525, 555, 530, 540],
+                            cy: [280, 295, 265, 285, 280],
+                          }
+                        : {
+                            opacity: [0.88, 0.13],
+                          }
+                    }
+                    transition={
+                      introComplete
+                        ? {
+                            duration: 29,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                          }
+                        : {
+                            duration: 2.5,
+                            ease: 'easeOut',
+                          }
+                    }
+                  />
+
+                  <defs>
+                    {/* Градиент 1 - переливы от голубого к зеленому */}
+                    <radialGradient id="gradient1" cx="0.5" cy="0.5" r="0.5">
+                      <stop offset="0%" stopColor="#7CB5F2" />
+                      <stop offset="20%" stopColor="#70C6DD" />
+                      <stop offset="40%" stopColor="#64D8C7" />
+                      <stop offset="60%" stopColor="#54D5B3" />
+                      <stop offset="80%" stopColor="#40D39C" />
+                      <stop offset="100%" stopColor="#26D07C" />
+                    </radialGradient>
+
+                    {/* Градиент 2 - мягкие переливы */}
+                    <radialGradient id="gradient2" cx="0.4" cy="0.4" r="0.6">
+                      <stop offset="0%" stopColor="#78B9EC" />
+                      <stop offset="30%" stopColor="#70C6DD" />
+                      <stop offset="50%" stopColor="#5FD7C2" />
+                      <stop offset="70%" stopColor="#62D7C4" />
+                      <stop offset="100%" stopColor="#54D5B3" />
+                    </radialGradient>
+                  </defs>
+                </svg>
+              </motion.div>
+            </div>
+          </div>
+        );
+      }
+
+      // Простой функциональный компонент
+      function Welcome({ name }) {
+        return <h1>Привет, {name}!</h1>;
+      }
+
+      // Компонент со состоянием
+      function Counter() {
+        const [count, setCount] = React.useState(0);
+
+        return (
+          <div>
+            <h2>Счётчик: {count}</h2>
+            <button onClick={() => setCount(count + 1)}>Увеличить</button>
+            <button onClick={() => setCount(count - 1)}>Уменьшить</button>
+            <button onClick={() => setCount(0)}>Сбросить</button>
+          </div>
+        );
+      }
+
+      // Компонент с формой
+      function TodoApp() {
+        const [todos, setTodos] = React.useState([]);
+        const [inputValue, setInputValue] = React.useState('');
+
+        const addTodo = () => {
+          if (inputValue.trim()) {
+            setTodos([...todos, inputValue]);
+            setInputValue('');
+          }
+        };
+
+        const removeTodo = (index) => {
+          const newTodos = todos.filter((_, i) => i !== index);
+          setTodos(newTodos);
+        };
+
+        return (
+          <div>
+            <h2>Список задач</h2>
+            <div>
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder="Введите задачу"
+                onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+              />
+              <button onClick={addTodo}>Добавить</button>
+            </div>
+            <ul>
+              {todos.map((todo, index) => (
+                <li key={index}>
+                  {todo}
+                  <button onClick={() => removeTodo(index)}>Удалить</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      }
+
+      // Главный компонент приложения
+      function App() {
+        return (
+          <div className="app">
+            <AiChatRebrandingAnimation />
+            <Welcome name="Пользователь" />
+            <Counter />
+            <TodoApp />
+          </div>
+        );
+      }
+
+      // Рендерим приложение в корневой элемент
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
