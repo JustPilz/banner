@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Иерархия китайских концернов смартфонов</title>
+    <style>
+      :root {
+        --bg-color: #f4f7f6;
+        --text-color: #333;
+        --card-bg: #ffffff;
+        --accent-color: #2c3e50;
+        --border-color: #e2e8f0;
+        --bbk-color: #3498db;
+        --xiaomi-color: #e67e22;
+        --huawei-color: #e74c3c;
+        --transsion-color: #2ecc71;
+        --lenovo-color: #9b59b6;
+        --zte-color: #16a085;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial,
+          sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        line-height: 1.6;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        text-align: center;
+        color: var(--accent-color);
+        margin-bottom: 40px;
+      }
+      .diagram-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 25px;
+        margin-bottom: 40px;
+      }
+      .conglomerate-card {
+        background: var(--card-bg);
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .card-header {
+        padding: 15px 20px;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+      }
+      .bbk {
+        background-color: var(--bbk-color);
+      }
+      .xiaomi {
+        background-color: var(--xiaomi-color);
+      }
+      .huawei {
+        background-color: var(--huawei-color);
+      }
+      .transsion {
+        background-color: var(--transsion-color);
+      }
+      .lenovo {
+        background-color: var(--lenovo-color);
+      }
+      .zte {
+        background-color: var(--zte-color);
+      }
+      .card-meta {
+        background: #f8fafc;
+        padding: 10px 20px;
+        font-size: 0.85rem;
+        color: #64748b;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .brands-list {
+        list-style: none;
+        padding: 20px;
+        margin: 0;
+        flex-grow: 1;
+      }
+      .brand-item {
+        background: #f8fafc;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+      }
+      .brand-item:last-child {
+        margin-bottom: 0;
+      }
+      .brand-name {
+        font-weight: bold;
+        color: var(--accent-color);
+        display: block;
+        margin-bottom: 4px;
+      }
+      .brand-desc {
+        font-size: 0.9rem;
+        color: #4a5568;
+      }
+      .notes-section {
+        background: #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 30px;
+        width: 100%;
+        grid-column: 1 / -1;
+      }
+      .notes-section h2 {
+        margin-top: 0;
+        font-size: 1.3rem;
+        color: var(--accent-color);
+      }
+      .notes-list {
+        padding-left: 20px;
+        margin-bottom: 0;
+      }
+      .notes-list li {
+        margin-bottom: 8px;
+      }
+      .notes-list li:last-child {
+        margin-bottom: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Иерархия китайских концернов смартфонов</h1>
+      <div class="diagram-grid">
+        <div class="conglomerate-card">
+          <div class="card-header bbk">BBK Electronics</div>
+          <div class="card-meta">
+            Разделенные независимые гиганты (общие заводы и R&D)
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">Oppo</span
+              ><span class="brand-desc"
+                >Флагманский бренд, дизайн, инновации и премиальные
+                камеры.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Vivo</span
+              ><span class="brand-desc"
+                >Технологический фокус на качественный звук, селфи и
+                дисплеи.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">OnePlus</span
+              ><span class="brand-desc"
+                >Изначально бренд для гиков, ныне флагманская линейка внутри
+                Oppo.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Realme</span
+              ><span class="brand-desc"
+                >Молодежный суббренд Oppo, максимальные характеристики за
+                минимальную цену.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">iQOO</span
+              ><span class="brand-desc"
+                >Суббренд компании Vivo, ориентированный на геймеров.</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="conglomerate-card">
+          <div class="card-header xiaomi">Xiaomi Corporation</div>
+          <div class="card-meta">
+            Глобальный гигант с огромной экосистемой устройств
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">Xiaomi (ранее Mi)</span
+              ><span class="brand-desc"
+                >Основной премиальный бренд для флагманов и технологичных
+                гаджетов.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Redmi</span
+              ><span class="brand-desc"
+                >Массовый народный сегмент: бюджетные и средне-бюджетные
+                устройства.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Poco (Pocophone)</span
+              ><span class="brand-desc"
+                >Международный бренд, «убийцы флагманов» с упором на
+                производительность.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Black Shark</span
+              ><span class="brand-desc"
+                >Специализированные игровые смартфоны (частично независим при
+                поддержке Xiaomi).</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="conglomerate-card">
+          <div class="card-header huawei">Huawei Technologies</div>
+          <div class="card-meta">
+            Технологический лидер под санкциями США, ОС HarmonyOS
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">Huawei</span
+              ><span class="brand-desc"
+                >Премиум-сегмент, складные инновационные смартфоны (Mate, Pura)
+                и камерофоны.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Wiko / Hi Nova</span
+              ><span class="brand-desc"
+                >Лицензированные бренды, выпускающие копии Huawei с поддержкой
+                5G в обход санкций.</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="conglomerate-card">
+          <div class="card-header transsion">Transsion Holdings</div>
+          <div class="card-meta">
+            Лидер развивающихся рынков (Африка, Южная Азия, СНГ)
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">Tecno</span
+              ><span class="brand-desc"
+                >Главный бренд концерна, от бюджетных линеек до флагманов
+                Phantom.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Infinix</span
+              ><span class="brand-desc"
+                >Молодежный бренд с ярким дизайном, быстрой зарядкой и игровыми
+                опциями.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Itel</span
+              ><span class="brand-desc"
+                >Суббренд ультрабюджетных устройств и кнопочных телефонов.</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="conglomerate-card">
+          <div class="card-header lenovo">Lenovo Group</div>
+          <div class="card-meta">
+            Крупнейший производитель ПК с мобильными активами
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">Motorola</span
+              ><span class="brand-desc"
+                >Выкупленный легендарный бренд, основа мобильного подразделения
+                на глобальном рынке.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Lenovo</span
+              ><span class="brand-desc"
+                >Смартфоны под собственным именем для внутреннего рынка Китая
+                (включая Legion).</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="conglomerate-card">
+          <div class="card-header zte">ZTE Corporation</div>
+          <div class="card-meta">
+            Государственная телекоммуникационная компания
+          </div>
+          <ul class="brands-list">
+            <li class="brand-item">
+              <span class="brand-name">ZTE</span
+              ><span class="brand-desc"
+                >Основной бренд потребительской электроники и
+                оборудования.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Nubia</span
+              ><span class="brand-desc"
+                >Премиальный бренд, известный экспериментами с дизайном и
+                скрытыми камерами.</span
+              >
+            </li>
+            <li class="brand-item">
+              <span class="brand-name">Red Magic</span
+              ><span class="brand-desc"
+                >Суббренд Nubia, выпускающий флагманские игровые
+                смартфоны.</span
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="notes-section">
+          <h2>Важные структурные изменения на рынке:</h2>
+          <ul class="notes-list">
+            <li>
+              <strong>Honor</strong> больше не принадлежит Huawei. В конце 2020
+              года бренд был полностью продан консорциуму Shenzhen Zhixin New
+              Information Technology, стал независимым и сохранил сервисы
+              Google.
+            </li>
+            <li>
+              Бренды группы <strong>BBK</strong> юридически позиционируют себя
+              как независимые компании, но используют единую производственную
+              базу.
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
